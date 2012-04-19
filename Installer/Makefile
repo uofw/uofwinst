@@ -1,0 +1,27 @@
+TARGET = installer
+OBJS = main.o
+EXTRA_CLEAN= galaxy.h march33_660.h popcorn.h satelite.h stargate.h systemctrl.h usbdevice.h vshctrl.h
+
+BUILD_PRX=1
+
+all: $(OBJS)
+
+$(OBJS): pre-build
+
+pre-build:
+	./create_module_include.py
+	touch main.c
+
+INCDIR = ../include ../Common
+CFLAGS = -Os -G0 -Wall -Wextra -Werror
+CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
+ASFLAGS = $(CFLAGS)
+
+PSP_FW_VERSION = 660
+
+LIBDIR = ../libs
+LDFLAGS =
+LIBS =  -lpspkubridge -lpsppower
+
+PSPSDK=$(shell psp-config --pspsdk-path)
+include $(PSPSDK)/lib/build.mak

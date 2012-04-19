@@ -1,0 +1,18 @@
+PSPSDK=$(shell psp-config --pspsdk-path)
+INCLUDES=-I $(PSPSDK)/include -I ../../Common
+
+all: a.bin
+
+CFLAGS=$(INCLUDES) -W -Wall -Os -G0 -fno-pic -fno-toplevel-reorder -mno-abicalls -w -S
+
+a.bin:
+	$(shell psp-config --pspdev-path)/bin/bin2c systemctrl.prx systemctrl.h systemcontrol
+	psp-gcc $(CFLAGS) main.c -o main.s
+	psp-as main.s -o main.o
+	psp-ld -T linkfile.l main.o -o main.elf
+	psp-strip -s main.elf
+	psp-objcopy -O binary main.elf rebootex.bin
+	$(shell psp-config --pspdev-path)/bin/bin2c rebootex.bin rebootex.h rebootex
+
+clean:
+	rm -rf *~ *.s *.o *.elf *.bin rebootex.h systemctrl.h systemctrl.prx
