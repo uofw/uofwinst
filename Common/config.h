@@ -27,7 +27,7 @@
 
 #define PATH_FLASH0 "flash0:/"
 #define PATH_USBDEVICE PATH_FLASH0 "kd/_usbdevice.prx"
-#define PATH_SYSTEMCTRL PATH_FLASH0 "kd/_systemctrl.prx"
+#define PATH_SYSTEMCTRL PATH_FLASH0 "kd/_systemctrl2.prx"
 #define PATH_VSHCTRL PATH_FLASH0 "kd/_vshctrl.prx"
 #define PATH_GALAXY PATH_FLASH0 "kd/_galaxy.prx"
 #define PATH_STARGATE PATH_FLASH0 "kd/_stargate.prx"
