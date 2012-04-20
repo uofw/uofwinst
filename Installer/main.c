@@ -334,7 +334,7 @@ int install_cfw(int newsysctrl)
         }
     }
     else
-        printf("Can't open dir: 0x%08X\n", file);
+        printf("Failed opening the module list at ms0:/uofw/list.txt: 0x%08X.\nCan't load custom uOFW modules.\n", file);
 
 	return 0;
 

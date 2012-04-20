@@ -1,6 +1,6 @@
 TARGET = installer
 OBJS = main.o
-EXTRA_CLEAN= galaxy.h march33_660.h popcorn.h satelite.h stargate.h systemctrl.h usbdevice.h vshctrl.h
+EXTRA_CLEAN= galaxy.h march33_660.h popcorn.h satelite.h stargate.h systemctrl.h systemctrl_nopatch.h usbdevice.h vshctrl.h
 
 BUILD_PRX=1
 

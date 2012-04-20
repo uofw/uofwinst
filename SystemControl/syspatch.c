@@ -264,12 +264,12 @@ static void patch_sceUmdMan_driver(SceModule* mod)
 	}
 }
 
-void syspatch_init(u8 patch_memlmd)
+void syspatch_init(u8 patch_memlmd __attribute__((unused)))
 {
 	setup_module_handler();
 	previous = sctrlHENSetStartModuleHandler(&syspatch_module_chain);
 	patch_sceLoaderCore();
-	if (!patch_memlmd)
+	if (patch_memlmd)
     	patch_sceMemlmd();
 	patch_sceInterruptManager();
 	patch_sceSystemMemoryManager();

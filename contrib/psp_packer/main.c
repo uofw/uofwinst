@@ -143,10 +143,8 @@ void GenerateRandom(u8 *buf, int size)
 {
 	int i;
 
-	for (i = 0; i < 0x10; i++)
-	{
+	for (i = 0; i < size; i++)
 		buf[i] = (rand() & 0xFF);
-	}
 }
 
 int PspPack(u8 *in, int size, u8 *out, int pbp, int use_sce_header)
@@ -332,7 +330,7 @@ int PspPack(u8 *in, int size, u8 *out, int pbp, int use_sce_header)
 
 void usage(char *prog)
 {
-	printf("Usage: %s [-s] input [output]\n", prog);
+	printf("Usage: %s [-s] input output\n", prog);
 }
 
 int main(int argc, char *argv[])
@@ -344,7 +342,7 @@ int main(int argc, char *argv[])
 	int sce_header = 0;
 	char *outfile;
 
-	if (argc < 2 || argc > 4)
+	if (argc < 3 || argc > 4)
 	{
 		usage(argv[0]);
 		return -1;
@@ -403,7 +401,7 @@ int main(int argc, char *argv[])
 	header = (u32 *)input;
 
 	res = 0;
-	outfile = (argc == 2) ? argv[1] : argv[2];
+	outfile = argv[2];
 
 	if (header[0] == 0x50425000)
 	{
