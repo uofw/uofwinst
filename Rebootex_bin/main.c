@@ -719,8 +719,6 @@ int _UnpackBootConfig(char **p_buffer, int length)
 
 #ifndef NOPATCH
     int i;
-    for (i = 0; i < 480 * 272 * 2; i++)
-        ((int*)0x44000000)[i] = 0x000000FF;
     for (i = 0; REBOOTEX_CONFIG_MODULE(i)[0] != '\0'; i++)
     {
         char oldname[256], newname[256];
@@ -730,20 +728,6 @@ int _UnpackBootConfig(char **p_buffer, int length)
         _strcpy(newname, "/_");
         _strcpy(&newname[2], REBOOTEX_CONFIG_MODULE(i));
         RenameModule(buffer, oldname, newname);
-        if (i > 0)
-        {
-            int j;
-            for (j = 0; j < 480 * 272 * 2; j++)
-                ((int*)0x44000000)[j] = 0x0000FF00;;
-        }
-        else
-        {
-            int j;
-            for (j = 0; j < 480 * 272 * 2; j++)
-                ((int*)0x44000000)[j] = 0x00FFFFFF;
-        }
-        //for (;;)
-            //;
     }
 #endif
 
