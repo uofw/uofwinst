@@ -120,7 +120,10 @@ int ReadFile(char *file, void *buf, int size)
 	if (!f)
 		return -1;
 
-	int rd = fread(buf, 1, size, f);
+	int rd = 0;
+	int curcount;
+	while ((curcount = fread(buf + rd, 1, 1024, f)) > 0)
+	    rd += curcount;
 	fclose(f);
 
 	return rd;

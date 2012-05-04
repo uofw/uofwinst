@@ -222,13 +222,26 @@ void install_module(char *fname, int len)
     SceUID in, out;
     char inname[256] = "ms0:/uofw/";
     char outname[256] = "flash0:/_";
-    strncpy(g_rebootex_args.modname[g_rebootex_args.modcount++], fname, len);
 
     strcat(inname, fname);
     strcat(outname, fname);
     in = sceIoOpen(inname, PSP_O_RDONLY, 0777);
     if (in < 0) {
         printf("Can't open %s: 0x%08X!\n", inname, in);
+        return;
+    }
+    char head[4];
+    sceIoRead(in, head, 4);
+    if (memcmp(head, "~PRX", 4) != 0)
+    {
+        printf("Can't load %s: invalid header! Did you pack the binary?\n", inname);
+        sceIoClose(in);
+        return;
+    }
+    if (sceIoLseek(in, 0, SEEK_END) <= 336)
+    {
+        printf("Can't load %s: file is too small!\n", inname);
+        sceIoClose(in);
         return;
     }
     out = sceIoOpen(outname, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
@@ -242,6 +255,7 @@ void install_module(char *fname, int len)
         sceIoWrite(out, buf, count);
     sceIoClose(in);
     sceIoClose(out);
+    strncpy(g_rebootex_args.modname[g_rebootex_args.modcount++], fname, len);
 }
 
 int install_cfw(int newsysctrl)
