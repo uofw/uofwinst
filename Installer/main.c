@@ -232,7 +232,7 @@ void install_module(char *fname, int len)
     }
     char head[4];
     sceIoRead(in, head, 4);
-    if (memcmp(head, "~PRX", 4) != 0)
+    if (memcmp(head, "~PSP", 4) != 0)
     {
         printf("Can't load %s: invalid header! Did you pack the binary?\n", inname);
         sceIoClose(in);
@@ -244,6 +244,7 @@ void install_module(char *fname, int len)
         sceIoClose(in);
         return;
     }
+    sceIoLseek(in, 0, SEEK_SET);
     out = sceIoOpen(outname, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
     if (out < 0) {
         printf("Can't open %s: 0x%08X!\n", outname, out);

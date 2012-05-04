@@ -113,7 +113,7 @@ enum moduleType
 	MODULE_PBP
 };
 
-int ReadFile(char *file, void *buf, int size)
+int ReadFile(char *file, void *buf)
 {
 	FILE *f = fopen(file, "rb");
 	
@@ -319,7 +319,7 @@ int PspPack(u8 *in, int size, u8 *out, int pbp, int use_sce_header)
 		out += 0x40;
 	}
 
-	header.comp_size = ReadFile("temp.bin", out+0x150, 6*1024*1024);
+	header.comp_size = ReadFile("temp.bin", out+0x150);
 	remove("temp.bin");
 
 	header.psp_size = header.comp_size+0x150;
