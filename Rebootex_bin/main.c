@@ -713,23 +713,37 @@ int _UnpackBootConfig(char **p_buffer, int length)
 
 	if (newsize > 0) result = newsize;
 
+	int i; for (i = 0; i < 480 * 272 * 2; i++) ((int*)0x44000000)[i] = 0x00FF00FF;
 	newsize = AddPRX(buffer, "/kd/me_wrapper.prx", PATH_STARGATE+sizeof(PATH_FLASH0)-2, GAME_RUNLEVEL | UMDEMU_RUNLEVEL);
 
 	if (newsize > 0) result = newsize;
 
 #ifndef NOPATCH
-    int i;
-    for (i = 0; REBOOTEX_CONFIG_MODULE(i)[0] != '\0'; i++)
+    //int i;
+    for (i = 0; REBOOTEX_CONFIG_MODULE_REPLACE(i)[0] != '\0'; i++)
     {
         char oldname[256], newname[256];
         oldname[0] = newname[0] = '\0';
         _strcpy(oldname, "/kd/");
-        _strcpy(&oldname[4], REBOOTEX_CONFIG_MODULE(i));
+        _strcpy(&oldname[4], REBOOTEX_CONFIG_MODULE_REPLACE(i));
         _strcpy(newname, "/_");
-        _strcpy(&newname[2], REBOOTEX_CONFIG_MODULE(i));
+        _strcpy(&newname[2], REBOOTEX_CONFIG_MODULE_REPLACE(i));
         RenameModule(buffer, oldname, newname);
     }
+    for (i = 0; REBOOTEX_CONFIG_MODULE_ADD(i)[0] != '\0' && REBOOTEX_CONFIG_MODULE_BEFOREADD(i)[0] != '\0'; i++)
+    {
+        char beforeadd[256];
+        char add[256];
+        beforeadd[0] = add[0] = '\0';
+        _strcpy(beforeadd, "/kd/");
+        _strcpy(&beforeadd[4], REBOOTEX_CONFIG_MODULE_BEFOREADD(i));
+        _strcpy(add, "/_");
+        _strcpy(&add[2], REBOOTEX_CONFIG_MODULE_ADD(i));
+        newsize = AddPRX(buffer, beforeadd, add, 0xEF);
+        if (newsize > 0) result = newsize;
+    }
 #endif
+	for (i = 0; i < 480 * 272 * 2; i++) ((int*)0x44000000)[i] = 0x0000FFFF;
 
 	switch(iso_mode) {
 		case NP9660_MODE:

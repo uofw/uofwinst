@@ -67,18 +67,28 @@ int load_reboot(void * arg1, unsigned int arg2, void * arg3, unsigned int arg4)
 	memset((void*)REBOOTEX_CONFIG_ISO_PATH, 0, 256);
 
     u8 patch_memlmd = 1;
+	int i; for (i = 0; i < 480 * 272 * 2; i++) ((int*)0x44000000)[i] = 0x00FF0000;
     if (g_args > 4)
     {
         int i;
         for (i = 0; i < 256; i++)
-        	memset(REBOOTEX_CONFIG_MODULE(i), 0, 256);
-    	for (i = 0; i < g_argp->modcount; i++)
+        {
+        	memset(REBOOTEX_CONFIG_MODULE_REPLACE(i), 0, 256);
+        	memset(REBOOTEX_CONFIG_MODULE_ADD(i), 0, 256);
+        	memset(REBOOTEX_CONFIG_MODULE_BEFOREADD(i), 0, 256);
+        }
+    	for (i = 0; i < g_argp->replacecount; i++)
     	{
-    	    strncpy(REBOOTEX_CONFIG_MODULE(i), g_argp->modname[i], 256);
-    	    if (patch_memlmd && strncmp(g_argp->modname[i], "memlmd", sizeof("memlmd")) == 0)
+    	    strncpy(REBOOTEX_CONFIG_MODULE_REPLACE(i), g_argp->replace[i], 256);
+    	    if (patch_memlmd && strncmp(g_argp->replace[i], "memlmd", sizeof("memlmd")) == 0)
     	        patch_memlmd = 0;
     	}
+    	for (i = 0; i < g_argp->addcount; i++) {
+    	    strncpy(REBOOTEX_CONFIG_MODULE_ADD(i), g_argp->add[i], 256);
+    	    strncpy(REBOOTEX_CONFIG_MODULE_BEFOREADD(i), g_argp->beforeadd[i], 256);
+    	}
     }
+	for (i = 0; i < 480 * 272 * 2; i++) ((int*)0x44000000)[i] = 0x00FFFF00;
 
 	build_rebootex_configure(patch_memlmd);
 

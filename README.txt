@@ -2,6 +2,26 @@ From ProCFW, from http://code.google.com/p/procfw/
 Code is placed under GPLv3, as ProCFW.
 It was patched so it only supports 6.60 and can run uOFW modules.
 
+== uOFW installer usage ==
+
+You need any 6.60 firmware, on any model.
+
+* Copy the contents of the "dist" directory at the root of your memory stick.
+* Create a directory named "uofw" (without the quotation marks) at the root of your memory stick.
+* Pack the modules using the "contrib/psp_packer/" utility (you'll need to compile it on UNIX-like OSes by typing 'make'). Note this step will be removed since the psp_packer will be integrated in the installer later.
+* Put the packed files into the uofw directory you created on your memory stick.
+* Create a file named list.txt in the uofw directory and fill it with this syntax:
+
+; Lines starting with ; are comments
+[replace]
+; modules to replace with your own version (don't put the "<>" in the file)
+; they must be with the same name in the uofw directory and will replace in pspbtcnf the module at "/kd/<module>.prx"
+<module>.prx
+[add]
+; insert modules
+; here, <new_module>.prx is inserted right before <next_module>.prx in pspbtcnf
+<new_module>.prx <next_module>.prx
+
 == Directories ==
 
 - Common:
@@ -27,12 +47,4 @@ Vshctrl: to enter the recovery or satelite menu from VSH
 Popcorn: POPS enabler
 ISODrivers: the.. ISO drivers
 Stargate: disable DRMs
-
-== Installing ==
-
-You need a 6.60 OFW or CFW (all the 01g-09g should work; it's brick-free).
-Run: make
-Copy the contents of the "dist" directory at the root of your memory stick
-Create a directory named uofw at the root of your memory stick and place the uofw modules there
-Run the uOFW installer from the VSH!
 

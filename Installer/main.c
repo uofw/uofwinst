@@ -215,9 +215,9 @@ static const char *g_old_cfw_files[] = {
 	"flash0:/vsh/module/satelite.prx",
 };
 
-rebootex_args g_rebootex_args = { 0, 0, { "\0" }};
+rebootex_args g_rebootex_args = { 0, 0, 0, { "\0" }, { "\0" }, { "\0" }};
 
-void install_module(char *fname, int len)
+void install_module(char *fname)
 {
     SceUID in, out;
     char inname[256] = "ms0:/uofw/";
@@ -256,7 +256,49 @@ void install_module(char *fname, int len)
         sceIoWrite(out, buf, count);
     sceIoClose(in);
     sceIoClose(out);
-    strncpy(g_rebootex_args.modname[g_rebootex_args.modcount++], fname, len);
+}
+
+void replace_module(char *fname)
+{
+    install_module(fname);
+    strncpy(g_rebootex_args.replace[g_rebootex_args.replacecount++], fname, strlen(fname));
+}
+
+void add_module(char *add, char *beforeadd)
+{
+    install_module(add);
+    strncpy(g_rebootex_args.add      [g_rebootex_args.addcount], add,       strlen(      add));
+    strncpy(g_rebootex_args.beforeadd[g_rebootex_args.addcount], beforeadd, strlen(beforeadd));
+    g_rebootex_args.addcount++;
+}
+
+int is_key_press(int but)
+{
+	SceCtrlData ctl;
+    sceCtrlReadBufferPositive(&ctl, 1);
+    if (ctl.Buttons & but)
+    {
+        do
+        {
+            sceCtrlReadBufferPositive(&ctl, 1);
+            sceKernelDelayThread(50000);
+        } while (ctl.Buttons & but);
+        return 1;
+    }
+    else
+        return 0;
+}
+
+int query(void)
+{
+    for (;;)
+    {
+        if (is_key_press(PSP_CTRL_CROSS))
+            return 1;
+        else if (is_key_press(PSP_CTRL_CIRCLE))
+            return 0;
+        sceKernelDelayThread(50000);
+    }
 }
 
 int install_cfw(int newsysctrl)
@@ -303,48 +345,89 @@ int install_cfw(int newsysctrl)
 	}
 
     SceUID file = sceIoOpen("ms0:/uofw/list.txt", 1, 0777);
+    typedef enum
+    {
+        SECTION_NONE,
+        SECTION_REPLACE,
+        SECTION_ADD
+    } Section;
+    Section sec = SECTION_NONE;
     if (file >= 0)
     {
         char buf[256];
-        char fname[256];
+        char arg0[256];
+        char arg1[256];
         int curPos = 0;
         int count;
         while ((count = sceIoRead(file, buf, 256)) > 0)
         {
-	        SceCtrlData ctl;
             int i;
             for (i = 0; i < count && buf[i] != '\0' && buf[i] != '\n' && buf[i] != '\r'; i++)
                 ;
             curPos += i + 1;
-            strncpy(fname, buf, i);
+            buf[i] = '\0';
             sceIoLseek(file, curPos, SEEK_SET);
+            if (i == 0 || buf[0] == ';')
+                continue;
 
-            printf("%s: enable? (X: yes / O: no) ", fname);
-            for (;;)
+            if (buf[0] == '[')
             {
-                sceCtrlReadBufferPositive(&ctl, 1);
-                if (ctl.Buttons & PSP_CTRL_CROSS)
+                if (strncmp(buf, "[replace]", i) == 0)
+                    sec = SECTION_REPLACE;
+                else if (strncmp(buf, "[add]", i) == 0)
+                    sec = SECTION_ADD;
+                else
+                    sec = SECTION_NONE;
+            }
+            else
+            {
+                char *spc = strchr(buf, ' ');
+                if (spc == NULL)
                 {
-                    printf("Enabled.\n");
-                    do
+                    strncpy(arg0, buf, i);
+                    arg0[i] = '\0';
+                    arg1[0] = '\0';
+                }
+                else
+                {
+                    int posArg1 = spc - buf + 1;
+                    int sizeArg1 = i - posArg1;
+                    strncpy(arg0, buf, posArg1 - 1);
+                    arg0[posArg1 - 1] = '\0';
+                    strncpy(arg1, &buf[posArg1], sizeArg1);
+                    arg1[sizeArg1] = '\0';
+                }
+
+                switch (sec)
+                {
+                case SECTION_REPLACE:
+                    printf("%s: enable? (X: yes / O: no) ", arg0);
+                    if (query()) {
+                        printf("Enabled.\n");
+                        replace_module(arg0);
+                    }
+                    else
+                        printf("Not enabled.\n");
+                    break;
+
+                case SECTION_ADD:
+                    if (arg1[0] == '\0')
+                        printf("Syntax error in section [add]: no second argument!\n");
+                    else
                     {
-                        sceCtrlReadBufferPositive(&ctl, 1);
-                        sceKernelDelayThread(50000);
-                    } while (ctl.Buttons & PSP_CTRL_CROSS);
-                    install_module(fname, i);
+                        printf("%s: add before %s? (X: yes / O: no) ", arg0, arg1);
+                        if (query()) {
+                            printf("Added.\n");
+                            add_module(arg0, arg1);
+                        }
+                        else
+                            printf("Not added.\n");
+                    }
+                    break;
+
+                default:
                     break;
                 }
-                else if (ctl.Buttons & PSP_CTRL_CIRCLE)
-                {
-                    printf("Not enabled.\n");
-                    do
-                    {
-                        sceCtrlReadBufferPositive(&ctl, 1);
-                        sceKernelDelayThread(50000);
-                    } while (ctl.Buttons & PSP_CTRL_CIRCLE);
-                    break;
-                }
-                sceKernelDelayThread(50000);
             }
         }
     }
@@ -535,6 +618,7 @@ void start_reboot(int mode)
 	int delay = 0;
 	char modpath[80];
 
+	int i; for (i = 0; i < 480 * 272 * 2; i++) ((int*)0x44000000)[i] = 0x0000FF00;
 	sprintf(modpath, "rebootex.prx");
 	modid = kuKernelLoadModule(modpath, 0, 0);
 
@@ -543,7 +627,7 @@ void start_reboot(int mode)
 	    SceKernelSMOption opt;
 	    opt.size = 20;
 	    opt.mpidstack = PSP_MEMORY_PARTITION_KERNEL;
-	    opt.stacksize = 0x20000;
+	    opt.stacksize = 0x50000;
 	    opt.priority = 0;
 	    opt.attribute = 0;
 		ret = sceKernelStartModule(modid, sizeof(g_rebootex_args), &g_rebootex_args, 0, &opt);
@@ -636,6 +720,7 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 
 	if (key & PSP_CTRL_CROSS) {
 		ret = install_cfw(0);
+		int i; for (i = 0; i < 480 * 272 * 2; i++) ((int*)0x44000000)[i] = 0x000000FF;
 
 		if (ret == 0) {
 			printf(" Completed.\nPress X to start CFW.\n");

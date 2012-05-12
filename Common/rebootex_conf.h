@@ -18,10 +18,12 @@
 #ifndef PROBOOTCONF_H
 #define PROBOOTCONF_H
 
-#define REBOOTEX_CONFIG 0x88FA0000
+#define REBOOTEX_CONFIG 0x88F00000
 #define REBOOTEX_CONFIG_MAGIC 0xC01DB15D
 #define REBOOTEX_CONFIG_ISO_PATH (REBOOTEX_CONFIG + 0x100)
-#define REBOOTEX_CONFIG_MODULE(i) ((char*)(REBOOTEX_CONFIG_ISO_PATH + 0x100 + i * 0x100))
+#define REBOOTEX_CONFIG_MODULE_REPLACE(i) ((char*)(REBOOTEX_CONFIG_ISO_PATH + 0x100 + i * 0x100))
+#define REBOOTEX_CONFIG_MODULE_ADD(i) ((char*)(REBOOTEX_CONFIG_MODULE_REPLACE(256) + i * 0x100))
+#define REBOOTEX_CONFIG_MODULE_BEFOREADD(i) ((char*)(REBOOTEX_CONFIG_MODULE_ADD(256) + i * 0x100))
 
 #define REBOOT_START 0x88600000
 #define REBOOTEX_START 0x88FC0000
@@ -70,8 +72,10 @@ extern rebootex_config rebootex_conf;
 typedef struct
 {
     int mode;
-    int modcount;
-    char modname[256][256];
+    int replacecount, addcount;
+    char add[256][256];
+    char beforeadd[256][256];
+    char replace[256][256];
 } rebootex_args;
 
 #endif

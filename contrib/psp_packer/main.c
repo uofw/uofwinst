@@ -8,14 +8,6 @@
 #define u16 unsigned short
 #define u32	unsigned int
 
-u8 sce_header[64] = 
-{
-	0x7E, 0x53, 0x43, 0x45, 0x40, 0x00, 0x00, 0x00, 0x5C, 0x79, 0x72, 0x3D, 0x6B, 0x68, 0x5A, 0x30, 
-	0x5C, 0x7D, 0x34, 0x67, 0x57, 0x59, 0x34, 0x78, 0x79, 0x8A, 0x4E, 0x3D, 0x47, 0x4B, 0x44, 0x44, 
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
 typedef struct
 {
 	u32		signature;  // 0
@@ -150,7 +142,7 @@ void GenerateRandom(u8 *buf, int size)
 		buf[i] = (rand() & 0xFF);
 }
 
-int PspPack(u8 *in, int size, u8 *out, int pbp, int use_sce_header)
+int PspPack(u8 *in, int size, u8 *out)
 {
 	PSP_Header header;
 	Elf32_Ehdr *elf_header;
@@ -227,67 +219,17 @@ int PspPack(u8 *in, int size, u8 *out, int pbp, int use_sce_header)
 	{
 	    if (elf_header->e_phnum >= 2)
 	        header.bss_size = segments[1].p_memsz - segments[1].p_filesz;
-	    else {
-    		printf("Error: .bss section not found.\n");
-    		return -1;
-    	}
+	    else
+	        header.bss_size = 0;
 	}	
 
 	if (header.attribute & 0x1000)
-	{
-		if (pbp)
-		{
-			printf("No PBP Kernel support!\n");
-			return -1;
-		}
 		header.decrypt_mode = 2;
-	}
-
 	else if (header.attribute & 0x800)
-	{
-		if (pbp)
-		{				
-			header.decrypt_mode = 0x0C;
-			//printf("No PBP VSH support!\n");
-			//return -1;
-		}
-		else
-		{
-			header.decrypt_mode = 3;
-		}
-
-
-		//printf("No VSH prx support.\n");
-		//return -1;
-	}
+		header.decrypt_mode = 3;
 	else
-	{
-		if (pbp)
-		{
-			if (header.attribute != 0x200)
-			{
-				char ans;
-				
-				printf("PBP modules attribute have to be 0x200, do you want it to be automatically changed? (y/n) ");
-				
-				do
-				{
-					scanf("%c", &ans);
-					ans = tolower(ans);
-				} while (ans != 'n' && ans != 'y');
+		header.decrypt_mode = 4;
 
-				if (ans == 'n')
-				{
-					printf("Aborted.\n");
-					return -1;
-				}			
-			}
-			header.attribute = modinfo->attribute = 0x200;
-			header.decrypt_mode = 0x0D;
-		}
-		else
-			header.decrypt_mode = 4;
-	}
 	header.oe_tag = 0xC01DB15D;
 	header.tag = 0xDADADAF0;
 	header.devkitversion = 0x06060010;
@@ -313,27 +255,18 @@ int PspPack(u8 *in, int size, u8 *out, int pbp, int use_sce_header)
 
 	gzclose(comp);
 
-	if (use_sce_header)
-	{
-		memcpy(out, sce_header, 0x40);
-		out += 0x40;
-	}
-
 	header.comp_size = ReadFile("temp.bin", out+0x150);
 	remove("temp.bin");
 
 	header.psp_size = header.comp_size+0x150;
 	memcpy(out, &header, 0x150);
 
-	if (use_sce_header)
-		header.psp_size += 0x40;
-
 	return header.psp_size;
 }
 
 void usage(char *prog)
 {
-	printf("Usage: %s [-s] input output\n", prog);
+	printf("Usage: %s input output\n", prog);
 }
 
 int main(int argc, char *argv[])
@@ -342,36 +275,14 @@ int main(int argc, char *argv[])
 	u32 *header;
 	FILE *f;
 	int size, res;
-	int sce_header = 0;
 	char *outfile;
 
-	if (argc < 3 || argc > 4)
+	if (argc != 3)
 	{
 		usage(argv[0]);
 		return -1;
 	}
 
-	if (strcmp(argv[1], "-s") == 0)
-	{
-		if (argc == 2)
-		{
-			usage(argv[0]);
-			return -1;
-		}
-		
-		sce_header = 1;
-		argv++;
-		argc--;
-	}
-	else
-	{
-		if (argc == 4)
-		{
-			usage(argv[0]);
-			return -1;
-		}
-	}
-	
 	srand(time(0));
 
 	f = fopen(argv[1], "rb");
@@ -406,51 +317,9 @@ int main(int argc, char *argv[])
 	res = 0;
 	outfile = argv[2];
 
-	if (header[0] == 0x50425000)
+	if (header[0] == 0x464C457F)
 	{
-		int prxpos = header[8];
-		int prxsize = header[9] - header[8];
-		int psarsize = size - header[9];
-		
-		if (input[prxpos] == 0x7F && memcmp(input+prxpos+1, "ELF", 3) == 0)
-		{
-			size = PspPack(input+prxpos, prxsize, output, 1, sce_header);
-			if (size < 0)
-			{
-				printf("Error in PspPack.\n");
-				res = -1;
-			}
-			else if (size != 0)
-			{
-				header[9] = prxpos + size;
-				f = fopen(outfile, "wb");
-				if (!f)
-				{
-					printf("Error opening %s for writing.\n", outfile);
-					res = -1;
-				}
-				else
-				{
-					fwrite(input, 1, prxpos, f);
-					fwrite(output, 1, size, f);
-					fwrite(input+prxpos+prxsize, 1, psarsize, f);
-					fclose(f);
-				}
-			}
-		}
-		else if (memcmp(input+prxpos, "~PSP", 4) == 0 || memcmp(input+prxpos, "~SCE", 4) == 0)
-		{
-			printf("Already packed.\n");		
-		}
-		else
-		{
-			printf("Unknown file type in DATA.PSP: 0x%08X\n", header[0]);
-			res = -1;
-		}
-	}
-	else if (header[0] == 0x464C457F)
-	{
-		size = PspPack(input, size, output, 0, sce_header);
+		size = PspPack(input, size, output);
 		
 		if (size < 0)
 		{
