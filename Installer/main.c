@@ -37,7 +37,6 @@
 #include "satelite.h"
 #include "stargate.h"
 #include "systemctrl.h"
-#include "systemctrl_nopatch.h"
 #include "usbdevice.h"
 #include "vshctrl.h"
 #include "recovery.h"
@@ -199,7 +198,7 @@ struct InstallList {
 };
 
 struct InstallList g_file_lists[] = {
-	{ NULL, NULL, PATH_SYSTEMCTRL, },
+	{ systemctrl, &size_systemctrl, PATH_SYSTEMCTRL, },
 	{ vshctrl, &size_vshctrl, PATH_VSHCTRL, },
 	{ galaxy, &size_galaxy, PATH_GALAXY, },
 	{ stargate, &size_stargate, PATH_STARGATE, },
@@ -515,7 +514,7 @@ int query(void)
     }
 }
 
-int install_cfw(int newsysctrl)
+int install_cfw(void)
 {
 	int ret;
 	u32 i;
@@ -527,15 +526,6 @@ int install_cfw(int newsysctrl)
 	for(i=0; i<NELEMS(g_old_cfw_files); ++i) {
 		sceIoRemove(g_old_cfw_files[i]);
 	}
-
-    if (newsysctrl) {
-        g_file_lists[0].buf = systemctrl;
-        g_file_lists[0].size = &size_systemctrl;
-    }
-    else {
-        g_file_lists[0].buf = systemctrl_nopatch;
-        g_file_lists[0].size = &size_systemctrl_nopatch;
-    }
 
 	for(i=0; i<NELEMS(g_file_lists); ++i) {
 		ret = smart_write_file(g_file_lists[i].dst, g_file_lists[i].buf, *g_file_lists[i].size);
@@ -905,7 +895,7 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 	}
 
 	if (key & PSP_CTRL_CROSS) {
-		ret = install_cfw(0);
+		ret = install_cfw();
 		if (ret == 0) {
 			printf(" Completed.\nPress X to start CFW.\n");
 

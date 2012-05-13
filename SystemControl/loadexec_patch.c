@@ -28,27 +28,20 @@
 #include "systemctrl.h"
 #include "systemctrl_se.h"
 #include "printk.h"
-#ifdef NOPATCH
-# include "../Rebootex_bin/rebootex_nopatch.h"
-#else
-# include "../Rebootex_bin/rebootex.h"
-#endif
+#include "../Rebootex_bin/rebootex.h"
 #include "rebootex_conf.h"
 #include "strsafe.h"
 #include "systemctrl_patch_offset.h"
 
 static int (*LoadReboot)(void * arg1, unsigned int arg2, void * arg3, unsigned int arg4) = NULL;
 rebootex_config rebootex_conf;
+rebootex_args rebootex_arg;
 
 //load reboot wrapper
 static int load_reboot(void * arg1, unsigned int arg2, void * arg3, unsigned int arg4)
 {
 	//copy reboot extender
-#ifdef NOPATCH
-    memcpy((void*)REBOOTEX_START, rebootex_nopatch, size_rebootex_nopatch);
-#else
 	memcpy((void*)REBOOTEX_START, rebootex, size_rebootex);
-#endif
 	//reset reboot flags
 	memset((void*)REBOOTEX_CONFIG, 0, 0x100);
 
@@ -61,6 +54,9 @@ static int load_reboot(void * arg1, unsigned int arg2, void * arg3, unsigned int
 	memcpy((void*)REBOOTEX_CONFIG, &rebootex_conf, sizeof(rebootex_conf));
 	memset((void*)REBOOTEX_CONFIG_ISO_PATH, 0, 256);
 	strcpy_s((char*)REBOOTEX_CONFIG_ISO_PATH, 256, sctrlSEGetUmdFile());
+	memcpy((void*)REBOOTEX_CONFIG_MODULE_REPLACE(0), &rebootex_arg.replace, sizeof(rebootex_arg.replace));
+	memcpy((void*)REBOOTEX_CONFIG_MODULE_ADD(0), &rebootex_arg.add, sizeof(rebootex_arg.add));
+	memcpy((void*)REBOOTEX_CONFIG_MODULE_BEFOREADD(0), &rebootex_arg.beforeadd, sizeof(rebootex_arg.beforeadd));
 
 	//forward
 	return (*LoadReboot)(arg1, arg2, arg3, arg4);

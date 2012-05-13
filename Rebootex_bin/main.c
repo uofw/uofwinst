@@ -717,7 +717,6 @@ int _UnpackBootConfig(char **p_buffer, int length)
 
 	if (newsize > 0) result = newsize;
 
-#ifndef NOPATCH
     int i;
     for (i = 0; REBOOTEX_CONFIG_MODULE_REPLACE(i)[0] != '\0'; i++)
     {
@@ -741,7 +740,6 @@ int _UnpackBootConfig(char **p_buffer, int length)
         newsize = AddPRX(buffer, beforeadd, add, 0xEF);
         if (newsize > 0) result = newsize;
     }
-#endif
 
 	switch(iso_mode) {
 		case NP9660_MODE:

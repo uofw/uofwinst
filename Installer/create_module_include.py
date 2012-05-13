@@ -13,7 +13,6 @@ def main():
 			"Satelite/satelite.prx",
 			"Stargate/stargate.prx",
 			"SystemControl/systemctrl.prx",
-			"SystemControl/systemctrl_nopatch.prx",
 			"usbdevice/usbdevice.prx",
 			"Vshctrl/vshctrl.prx",
 			"Recovery/recovery.prx",

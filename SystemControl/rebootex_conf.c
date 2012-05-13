@@ -37,6 +37,9 @@ void load_rebootex_config(void)
 	if (conf->magic == REBOOTEX_CONFIG_MAGIC) {
 		memcpy(&rebootex_conf, conf, sizeof(*conf));
 		SetUmdFile((char*)REBOOTEX_CONFIG_ISO_PATH);
+		memcpy(&rebootex_arg.replace, (void*)REBOOTEX_CONFIG_MODULE_REPLACE(0), sizeof(rebootex_arg.replace));
+		memcpy(&rebootex_arg.add, (void*)REBOOTEX_CONFIG_MODULE_ADD(0), sizeof(rebootex_arg.add));
+		memcpy(&rebootex_arg.beforeadd, (void*)REBOOTEX_CONFIG_MODULE_BEFOREADD(0), sizeof(rebootex_arg.beforeadd));
 		printk("%s: iso_mode %d fn: %s\n", __func__, rebootex_conf.iso_mode, GetUmdFile());
 	} else {
 		fill_vram(0xFF00);

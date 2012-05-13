@@ -78,4 +78,6 @@ typedef struct
     char replace[256][256];
 } rebootex_args;
 
+extern rebootex_args rebootex_arg;
+
 #endif

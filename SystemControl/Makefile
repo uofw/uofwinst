@@ -40,19 +40,9 @@ CFLAGS += -DDEBUG=1
 OBJS += validate_stub.o ../Common/printk.o
 endif
 
-ifeq ($(NOPATCH), 1)
-CFLAGS += -DNOPATCH=1
-TARGET = systemctrl_nopatch
-all:
-	../contrib/pspgz.py systemctrl_nopatch.prx ../contrib/SystemControl.hdr systemctrl_nopatch.prx
-else
 TARGET = systemctrl
 all:
 	../contrib/pspgz.py systemctrl.prx ../contrib/SystemControl.hdr systemctrl.prx
-endif
-
-cleanobj:
-	rm -f loadexec_patch.o
 
 OBJS += nid_660_data.o
 PSP_FW_VERSION = 660
