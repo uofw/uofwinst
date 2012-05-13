@@ -21,7 +21,10 @@
 #include <pspsdk.h>
 #include <psppower.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <zlib.h>
+
 #include "kubridge.h"
 #include "utils.h"
 
@@ -42,6 +45,10 @@
 
 #include "../Common/rebootex_conf.h"
 
+#define UOFW_DIR "ms0:/uofw"
+#define UOFW_LIST UOFW_DIR "/list.txt"
+#define UOFW_LOG UOFW_DIR "/log.txt"
+
 // VSH module can write F0/F1
 PSP_MODULE_INFO("PROUpdater", 0x0800, 1, 0);
 
@@ -50,7 +57,6 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
 
 PSP_HEAP_SIZE_MAX();
 
-#define VERSION_STR "PRO-B"
 #define printf pspDebugScreenPrintf
 
 int psp_model = 0;
@@ -183,7 +189,7 @@ void init_flash()
 
 void usage(void)
 {
-	printf(VERSION_STR " by Team PRO\n");
+	printf("uOFW's installer, based on Team PRO's work\n");
 }
 
 struct InstallList {
@@ -217,10 +223,239 @@ static const char *g_old_cfw_files[] = {
 
 rebootex_args g_rebootex_args = { 0, 0, 0, { "\0" }, { "\0" }, { "\0" }};
 
-void install_module(char *fname)
+u8 compress_buf[2000000];
+
+typedef struct
+{   
+    u32     signature;  // 0
+    u16     attribute; // 4  modinfo
+    u16     comp_attribute; // 6
+    u8      module_ver_lo;  // 8
+    u8      module_ver_hi;  // 9
+    char    modname[28]; // 0A
+    u8      version; // 26
+    u8      nsegments; // 27
+    int     elf_size; // 28
+    int     psp_size; // 2C
+    u32     entry;  // 30
+    u32     modinfo_offset; // 34
+    int     bss_size; // 38
+    u16     seg_align[4]; // 3C
+    u32     seg_address[4]; // 44
+    int     seg_size[4]; // 54
+    u32     reserved[5]; // 64
+    u32     devkitversion; // 78
+    u32     decrypt_mode; // 7C 
+    u8      key_data0[0x30]; // 80
+    int     comp_size; // B0
+    int     _80;    // B4
+    int     reserved2[2];   // B8
+    u8      key_data1[0x10]; // C0
+    u32     tag; // D0
+    u8      scheck[0x58]; // D4
+    u32     key_data2; // 12C
+    u32     oe_tag; // 130
+    u8      key_data3[0x1C]; // 134
+} __attribute__((packed)) PSP_Header;
+
+typedef struct
+{   
+    u32 e_magic;
+    u8  e_class;
+    u8  e_data;
+    u8  e_idver;
+    u8  e_pad[9];
+    u16 e_type;
+    u16 e_machine;
+    u32 e_version;
+    u32 e_entry;
+    u32 e_phoff;
+    u32 e_shoff;
+    u32 e_flags;
+    u16 e_ehsize;
+    u16 e_phentsize;
+    u16 e_phnum;
+    u16 e_shentsize;
+    u16 e_shnum;
+    u16 e_shstrndx;
+} __attribute__((packed)) Elf32_Ehdr;
+
+typedef struct
+{   
+    u32 p_type;                                                                                                                                                                                   
+    u32 p_offset;                                                                                                                                                                                 
+    u32 p_vaddr;
+    u32 p_paddr;
+    u32 p_filesz;
+    u32 p_memsz;
+    u32 p_flags;
+    u32 p_align;
+} __attribute__((packed)) Elf32_Phdr;
+
+typedef struct
 {
-    SceUID in, out;
-    char inname[256] = "ms0:/uofw/";
+    u32 sh_name;
+    u32 sh_type;
+    u32 sh_flags;
+    u32 sh_addr;
+    u32 sh_offset;
+    u32 sh_size;
+    u32 sh_link;
+    u32 sh_info;
+    u32 sh_addralign;
+    u32 sh_entsize;
+} __attribute__((packed)) Elf32_Shdr;
+
+typedef struct
+{
+    u16     attribute;
+    u8      module_ver_lo;
+    u8      module_ver_hi;
+    char    modname[28];
+} __attribute__((packed)) PspModuleInfo;
+
+void generate_random(u8 *buf, int size)
+{   
+    int i;
+    for (i = 0; i < size; i++)
+        buf[i] = (rand() & 0xFF);
+}
+
+int compress_module(const char *outname, u8 *buf, int size)
+{
+    PSP_Header header;
+    Elf32_Ehdr *elf_header;
+    Elf32_Phdr *segments;
+    Elf32_Shdr *sections;
+    char *strtab;
+    PspModuleInfo *modinfo;
+    int i;
+
+    SceUID out = sceIoOpen(outname, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
+    if (out < 0) {
+        printf("Can't open %s: 0x%08X!\n", outname, out);
+        return -1;
+    }
+
+    memset(&header, 0, sizeof(header));
+
+    sceIoWrite(out, &header, sizeof(header));
+    sceIoClose(out);
+
+    // Fill simple fields
+    header.signature = 0x5053507E;
+    header.comp_attribute = 1;
+    header.version = 1;
+    header.elf_size = size;
+
+    header._80 = 0x80;
+
+    elf_header = (Elf32_Ehdr *)buf;
+    if (elf_header->e_magic != 0x464C457F)
+    {   
+        if (elf_header->e_magic == 0x5053507E || elf_header->e_magic == 0x4543537E)
+        {   
+            printf("Already packed.\n");
+            return 0;
+        }
+        
+        printf("Not a PRX.\n");
+        return -1;
+    }
+    
+    // Fill fields from elf header
+    header.entry = elf_header->e_entry;
+    header.nsegments = (elf_header->e_phnum > 2) ? 2 : elf_header->e_phnum;
+
+    if (header.nsegments == 0)
+    {   
+        printf("There are no segments.\n");
+        return -1;
+    }
+    
+    // Fill segements
+    segments = (Elf32_Phdr *)&buf[elf_header->e_phoff];
+
+    for (i = 0; i < header.nsegments; i++)
+    {   
+        header.seg_align[i] = segments[i].p_align;
+        header.seg_address[i] = segments[i].p_vaddr;
+        header.seg_size[i] = segments[i].p_memsz;
+    }
+    
+    // Fill module info fields
+    header.modinfo_offset = segments[0].p_paddr;
+    modinfo = (PspModuleInfo *)&buf[header.modinfo_offset&0x7FFFFFFF];
+    header.attribute = modinfo->attribute;
+    header.module_ver_lo = modinfo->module_ver_lo;
+    header.module_ver_hi = modinfo->module_ver_hi;
+    strncpy(header.modname, modinfo->modname, 28);
+
+    sections = (Elf32_Shdr *)&buf[elf_header->e_shoff];                                                                                                                                           
+    strtab = (char *)(sections[elf_header->e_shstrndx].sh_offset + buf);
+
+    for (i = 0; i < elf_header->e_shnum; i++)
+    {
+        if (strcmp(strtab+sections[i].sh_name, ".bss") == 0)
+        {
+            header.bss_size = sections[i].sh_size;
+            break;
+        }
+    }
+
+    if (i == elf_header->e_shnum)
+    {
+        if (elf_header->e_phnum >= 2)
+            header.bss_size = segments[1].p_memsz - segments[1].p_filesz;
+        else
+            header.bss_size = 0;
+    }
+
+    if (header.attribute & 0x1000)
+        header.decrypt_mode = 2;
+    else if (header.attribute & 0x800)
+        header.decrypt_mode = 3;
+    else
+        header.decrypt_mode = 4;
+
+    header.oe_tag = 0xC01DB15D;
+    header.tag = 0xDADADAF0;
+    header.devkitversion = 0x06060010;
+
+    // Fill key data with random bytes
+    generate_random(header.key_data0, 0x30);
+    generate_random(header.key_data1, 0x10);
+    generate_random((u8 *)&header.key_data2, 4);
+    generate_random(header.key_data3, 0x1C);
+
+    gzFile comp = gzopen(outname, "ab");
+    if (!comp)
+    {
+        printf("Cannot create temp file.\n");
+        return -1;
+    }
+
+    if (gzwrite(comp, buf, size) != size)
+    {
+        printf("Error in compression.\n");
+        return -1;
+    }
+
+    gzclose(comp);
+
+    out = sceIoOpen(outname, PSP_O_WRONLY, 0777);
+    header.psp_size = sceIoLseek(out, 0, SEEK_END);
+    header.comp_size = header.psp_size - 0x150;
+    sceIoLseek(out, 0, SEEK_SET);
+    sceIoWrite(out, &header, sizeof(header));
+    sceIoClose(out);
+    return 0;
+}
+
+int install_module(char *fname)
+{
+    SceUID in;
+    char inname[256] = UOFW_DIR "/";
     char outname[256] = "flash0:/_";
 
     strcat(inname, fname);
@@ -228,48 +463,27 @@ void install_module(char *fname)
     in = sceIoOpen(inname, PSP_O_RDONLY, 0777);
     if (in < 0) {
         printf("Can't open %s: 0x%08X!\n", inname, in);
-        return;
+        return -1;
     }
-    char head[4];
-    sceIoRead(in, head, 4);
-    if (memcmp(head, "~PSP", 4) != 0)
-    {
-        printf("Can't load %s: invalid header! Did you pack the binary?\n", inname);
-        sceIoClose(in);
-        return;
-    }
-    if (sceIoLseek(in, 0, SEEK_END) <= 336)
-    {
-        printf("Can't load %s: file is too small!\n", inname);
-        sceIoClose(in);
-        return;
-    }
-    sceIoLseek(in, 0, SEEK_SET);
-    out = sceIoOpen(outname, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
-    if (out < 0) {
-        printf("Can't open %s: 0x%08X!\n", outname, out);
-        return;
-    }
-    char buf[256];
-    int count;
-    while ((count = sceIoRead(in, buf, 256)) > 0)
-        sceIoWrite(out, buf, count);
+    int count = sceIoRead(in, compress_buf, 2000000);
     sceIoClose(in);
-    sceIoClose(out);
+    return compress_module(outname, compress_buf, count);
 }
 
 void replace_module(char *fname)
 {
-    install_module(fname);
-    strncpy(g_rebootex_args.replace[g_rebootex_args.replacecount++], fname, strlen(fname));
+    if (install_module(fname) >= 0)
+        strncpy(g_rebootex_args.replace[g_rebootex_args.replacecount++], fname, strlen(fname));
 }
 
 void add_module(char *add, char *beforeadd)
 {
-    install_module(add);
-    strncpy(g_rebootex_args.add      [g_rebootex_args.addcount], add,       strlen(      add));
-    strncpy(g_rebootex_args.beforeadd[g_rebootex_args.addcount], beforeadd, strlen(beforeadd));
-    g_rebootex_args.addcount++;
+    if (install_module(add) >= 0)
+    {
+        strncpy(g_rebootex_args.add      [g_rebootex_args.addcount], add,       strlen(      add));
+        strncpy(g_rebootex_args.beforeadd[g_rebootex_args.addcount], beforeadd, strlen(beforeadd));
+        g_rebootex_args.addcount++;
+    }
 }
 
 int is_key_press(int but)
@@ -344,7 +558,7 @@ int install_cfw(int newsysctrl)
 			break;
 	}
 
-    SceUID file = sceIoOpen("ms0:/uofw/list.txt", 1, 0777);
+    SceUID file = sceIoOpen(UOFW_LIST, 1, 0777);
     typedef enum
     {
         SECTION_NONE,
@@ -432,7 +646,7 @@ int install_cfw(int newsysctrl)
         }
     }
     else
-        printf("Failed opening the module list at ms0:/uofw/list.txt: 0x%08X.\nCan't load custom uOFW modules.\n", file);
+        printf("Failed opening the module list at %s: 0x%08X.\nCan't load custom uOFW modules.\n", UOFW_LIST, file);
 
 	return 0;
 
@@ -618,7 +832,6 @@ void start_reboot(int mode)
 	int delay = 0;
 	char modpath[80];
 
-	int i; for (i = 0; i < 480 * 272 * 2; i++) ((int*)0x44000000)[i] = 0x0000FF00;
 	sprintf(modpath, "rebootex.prx");
 	modid = kuKernelLoadModule(modpath, 0, 0);
 
@@ -661,6 +874,9 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 	init_flash();
 	usage();
 
+	if (sceIoRemove(UOFW_LOG) < 0)
+	    printf("-- Note: couldn't remove logging file.\n");
+
 	printf("Press X to launch CFW.\n");
 	printf("Press Triangle to uninstall CFW.\n");
 	printf("Hold L to reinstall CFW.\n");
@@ -682,36 +898,6 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 		sceKernelExitGame();
 	}
 
-	switch(psp_model) {
-		case PSP_GO:
-			printf("PSP GO BRITE Detected ....\n");
-			break;
-		case PSP_9000:
-			printf("PSP BRITE 3000(09g) Detected ....\n");
-			break;
-		case PSP_7000:
-			printf("PSP BRITE 3000(07g) Detected ....\n");
-			break;
-		case PSP_4000:
-			printf("PSP BRITE 3000(04g) Detected ....\n");
-			break;
-		case PSP_3000:
-			printf("PSP BRITE 3000 Detected ....\n");
-			break;
-		case PSP_2000:
-			printf("PSP SLIM 2000 Detected ....\n");
-			break;
-		case PSP_1000:
-			printf("PSP FAT 1000 Detected ....\n");
-			break;
-		case PSP_11000:
-			printf("PSP STREET E1000 Detected ....\n");
-			break;
-		default:
-			printf("Unknown PSP model 0%dg\n", psp_model+1);
-			break;
-	}
-
 	sceCtrlReadBufferPositive(&ctl, 1);
 
 	if (ctl.Buttons & PSP_CTRL_LTRIGGER) {
@@ -720,8 +906,6 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 
 	if (key & PSP_CTRL_CROSS) {
 		ret = install_cfw(0);
-		int i; for (i = 0; i < 480 * 272 * 2; i++) ((int*)0x44000000)[i] = 0x000000FF;
-
 		if (ret == 0) {
 			printf(" Completed.\nPress X to start CFW.\n");
 
@@ -734,7 +918,7 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 				key = ctl.Buttons;
 			}
 
-			printf("Now reboot to " VERSION_STR " :)\n");
+			printf("Now reboot to modified firmware :)\n");
 			start_reboot(1);
 		}
 	} else if (key & PSP_CTRL_TRIANGLE) {

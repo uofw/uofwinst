@@ -713,13 +713,12 @@ int _UnpackBootConfig(char **p_buffer, int length)
 
 	if (newsize > 0) result = newsize;
 
-	int i; for (i = 0; i < 480 * 272 * 2; i++) ((int*)0x44000000)[i] = 0x00FF00FF;
 	newsize = AddPRX(buffer, "/kd/me_wrapper.prx", PATH_STARGATE+sizeof(PATH_FLASH0)-2, GAME_RUNLEVEL | UMDEMU_RUNLEVEL);
 
 	if (newsize > 0) result = newsize;
 
 #ifndef NOPATCH
-    //int i;
+    int i;
     for (i = 0; REBOOTEX_CONFIG_MODULE_REPLACE(i)[0] != '\0'; i++)
     {
         char oldname[256], newname[256];
@@ -743,7 +742,6 @@ int _UnpackBootConfig(char **p_buffer, int length)
         if (newsize > 0) result = newsize;
     }
 #endif
-	for (i = 0; i < 480 * 272 * 2; i++) ((int*)0x44000000)[i] = 0x0000FFFF;
 
 	switch(iso_mode) {
 		case NP9660_MODE:

@@ -21,7 +21,7 @@ PSP_FW_VERSION = 660
 
 LIBDIR = ../libs
 LDFLAGS =
-LIBS =  -lpspkubridge -lpsppower
+LIBS =  -lpspkubridge -lpsppower -lz
 
 PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak

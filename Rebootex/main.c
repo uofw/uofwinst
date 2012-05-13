@@ -67,7 +67,6 @@ int load_reboot(void * arg1, unsigned int arg2, void * arg3, unsigned int arg4)
 	memset((void*)REBOOTEX_CONFIG_ISO_PATH, 0, 256);
 
     u8 patch_memlmd = 1;
-	int i; for (i = 0; i < 480 * 272 * 2; i++) ((int*)0x44000000)[i] = 0x00FF0000;
     if (g_args > 4)
     {
         int i;
@@ -88,7 +87,6 @@ int load_reboot(void * arg1, unsigned int arg2, void * arg3, unsigned int arg4)
     	    strncpy(REBOOTEX_CONFIG_MODULE_BEFOREADD(i), g_argp->beforeadd[i], 256);
     	}
     }
-	for (i = 0; i < 480 * 272 * 2; i++) ((int*)0x44000000)[i] = 0x00FFFF00;
 
 	build_rebootex_configure(patch_memlmd);
 

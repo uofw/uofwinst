@@ -8,8 +8,7 @@ You need any 6.60 firmware, on any model.
 
 * Copy the contents of the "dist" directory at the root of your memory stick.
 * Create a directory named "uofw" (without the quotation marks) at the root of your memory stick.
-* Pack the modules using the "contrib/psp_packer/" utility (you'll need to compile it on UNIX-like OSes by typing 'make'). Note this step will be removed since the psp_packer will be integrated in the installer later.
-* Put the packed files into the uofw directory you created on your memory stick.
+* Put the modules into the uofw directory you created on your memory stick.
 * Create a file named list.txt in the uofw directory and fill it with this syntax:
 
 ; Lines starting with ; are comments
