@@ -47,3 +47,38 @@ Popcorn: POPS enabler
 ISODrivers: the.. ISO drivers
 Stargate: disable DRMs
 
+== Running process ==
+
+- PXE/Launcher: launcher PBP, starts the exploit -> kernel_permission_call()
+  patches loadexec for it to run our own PXE/RebootEX, and then uses
+  sceKernelExitGame() to run it
+- PXE/RebootexPXE: patches reboot in order to add the fake "hen.prx" in the
+  module list (when it is read, it actually reads SystemControlPXE) and patch
+  reboot's loadcore to be able to run it
+- PXE/SystemControlPXE: patches loadcore, modulemgr, memlmd in order to run
+  unencrypted modules; patches sceLoadExec (at the time of running
+  sceMediaSync) and vsh_module in order to run the installer instead of them
+[Nothing should be touched there]
+
+- Installer: runs installer interface, copies & encrypts the modules to the
+  NAND, and starts rebootex.prx (if the user chose to run the modified
+  firmware) using normal module loading in start_reboot(); also sets the
+  arguments (options) it will pass to rebootex through 'argp' (module
+  argument)
+[May be changed to change list.txt reading and other writing to FW]
+
+- Rebootex: patches loadexec to run our fake reboot.bin (Rebootex_bin), copies
+  arguments passed from the Installer to reboot memory, then runs Rebootex_bin
+[Should probably be left untouched, except for copying new options]
+
+- Rebootex_bin: patches lfatfs reading / real reboot in order to run our fake
+  functions; _UnpackBootConfig() adds the replaced & new modules (in list.txt
+  or ProCFW modules like the important systemctrl) into the module list; a hook
+  is started just before loadcore, and patches it, before running the patched
+  loadcore
+[Should be modified when running our own & when modifying options]
+
+- Systemctrl: patch a lot of modules in order to be able to run non-signed
+  EBOOTs from the VSH (loadcore, memlmd, interruptman, sysmem)
+[Should be modified to remove our own modules patching & handle options]
+
