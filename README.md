@@ -1,10 +1,12 @@
-= uOFW installer =
+# uOFW installer
+
 
 From ProCFW, from http://code.google.com/p/procfw/  
 Code is placed under GPLv3, as ProCFW.  
 It was patched so it only supports 6.60 and can run uOFW modules.  
 
-= Usage =
+
+## Usage
 
 You need any installed 6.60 firmware, on any model.  
 
@@ -25,7 +27,8 @@ You need any installed 6.60 firmware, on any model.
 <new_module>.prx <next_module>.prx
 ```
 
-= Directories =
+
+## Directories
 
 - Common:
 
@@ -51,7 +54,7 @@ Popcorn: POPS enabler
 ISODrivers: the.. ISO drivers  
 Stargate: disable DRMs  
 
-= Running process =
+## Running process
 
 - PXE/Launcher: launcher PBP, starts the exploit -> kernel\_permission\_call()
   patches loadexec for it to run our own PXE/RebootEX, and then uses
