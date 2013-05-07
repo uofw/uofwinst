@@ -96,6 +96,13 @@ void patch_sceUSB_Stor_Ms_Driver(SceModule* mod);
 
 extern SEConfig conf;
 
+typedef struct
+{
+	int loadExec;
+	int init;
+} ReplacedMods;
+extern ReplacedMods replaced_mods;
+
 #include "../CrossFW/cross_fw.h"
 
 #endif

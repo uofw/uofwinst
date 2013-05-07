@@ -193,12 +193,15 @@ out:
 
 static int patch_sceKernelStartModule_in_bootstart(int (*bootstart)(SceSize, void*), void *argp)
 {
-	u32 import;
-
 	// patch sceInit with offset between module_bootstart and sceKernelStartModule
-	import = ((u32)bootstart) + g_offs->init_patch.sceKernelStartModuleImport - g_offs->init_patch.module_bootstart;
-	REDIRECT_FUNCTION(_sceKernelStartModule, import);
-	sceInit_text_addr = ((u32)bootstart) - g_offs->init_patch.module_bootstart;
+	if (!replaced_mods.init) {
+		u32 import = ((u32)bootstart) + g_offs->init_patch.sceKernelStartModuleImport - g_offs->init_patch.module_bootstart;
+		REDIRECT_FUNCTION(_sceKernelStartModule, import);
+		sceInit_text_addr = ((u32)bootstart) - g_offs->init_patch.module_bootstart;
+	} else {
+		sceInit_text_addr = *(u32*)((u32)bootstart - 4);
+		REDIRECT_FUNCTION(_sceKernelStartModule, *(u32*)(sceInit_text_addr + 0));
+	}
 	sync_cache();
 
 	return (*bootstart)(4, argp);

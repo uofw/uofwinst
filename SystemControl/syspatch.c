@@ -37,7 +37,7 @@ static STMOD_HANDLER previous;
 static void patch_sceWlan_Driver(u32 text_addr);
 static void patch_scePower_Service(u32 text_addr);
 static void patch_sceUmdMan_driver(SceModule* mod);
-int replaced_loadExec;
+ReplacedMods replaced_mods;
 
 int hasBeenReplaced(const char *prx)
 {
@@ -204,7 +204,7 @@ static int syspatch_module_chain(SceModule2 *mod)
 	// load after lflash
 	if(0 == strcmp(mod->modname, "sceDisplay_Service")) {
 		load_config();
-		patch_sceLoadExec(replaced_loadExec);
+		patch_sceLoadExec(replaced_mods.loadExec);
 		sync_cache();
 		goto exit;
 	}
@@ -301,7 +301,8 @@ void syspatch_init(void)
 {
 	setup_module_handler();
 
-	replaced_loadExec = hasBeenReplaced_allVer("loadexec");
+	replaced_mods.loadExec = hasBeenReplaced_allVer("loadexec");
+	replaced_mods.init = hasBeenReplaced("init");
 
 	previous = sctrlHENSetStartModuleHandler(&syspatch_module_chain);
 	patch_sceLoaderCore();
