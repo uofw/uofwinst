@@ -41,10 +41,10 @@ int _sceKernelCheckExecFile(unsigned char * buffer, int * check);
 extern int (* PartitionCheck)(unsigned int * st0, unsigned int * check);
 int _PartitionCheck(unsigned int * st0, unsigned int * check);
 
-void syspatch_init(u8 patch_memlmd);
+void syspatch_init(void);
 void setup_module_handler(void);
 void patch_sceLoaderCore(void);
-void patch_sceLoadExec(void);
+void patch_sceLoadExec(int isReplaced);
 void load_rebootex_config(void);
 void patch_sceMemlmd(void);
 void patch_sceInterruptManager(void);

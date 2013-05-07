@@ -62,36 +62,40 @@ static int load_reboot(void * arg1, unsigned int arg2, void * arg3, unsigned int
 	return (*LoadReboot)(arg1, arg2, arg3, arg4);
 }
 
-void patch_sceLoadExec(void)
+void patch_sceLoadExec(int isInstalled)
 {
 	SceModule2 * loadexec = (SceModule2*)sctrlKernelFindModuleByName("sceLoadExec");
-	struct sceLoadExecPatch *patch;
 
 	if (loadexec == NULL) {
 		return;
 	}
 
-	if(psp_model == PSP_GO) {
-		patch = &g_offs->loadexec_patch_05g;
+	if (!isInstalled) {
+		struct sceLoadExecPatch *patch;
+
+		if(psp_model == PSP_GO) {
+			patch = &g_offs->loadexec_patch_05g;
+		} else {
+			patch = &g_offs->loadexec_patch_other;
+		}
+
+		//replace LoadReboot function
+		_sw(MAKE_CALL(load_reboot), loadexec->text_addr + patch->LoadRebootCall);
+
+		//patch Rebootex position to 0x88FC0000
+		_sw(0x3C0188FC, loadexec->text_addr + patch->RebootJump); // lui $at, 0x88FC
+
+		//save LoadReboot function
+		LoadReboot = (void*)(loadexec->text_addr + patch->LoadReboot);
+
+		//allow user $k1 configs to call sceKernelLoadExecWithApiType
+		_sw(0x1000000C, loadexec->text_addr + patch->sceKernelLoadExecWithApiTypeCheck1);
+		//allow all user levels to call sceKernelLoadExecWithApiType
+		_sw(NOP, loadexec->text_addr + patch->sceKernelLoadExecWithApiTypeCheck2);
+
+		//allow all user levels to call sceKernelExitVSHVSH
+		_sw(0x10000008, loadexec->text_addr + patch->sceKernelExitVSHVSHCheck1);
+		_sw(NOP, loadexec->text_addr + patch->sceKernelExitVSHVSHCheck2);
 	} else {
-		patch = &g_offs->loadexec_patch_other;
 	}
-
-	//replace LoadReboot function
-	_sw(MAKE_CALL(load_reboot), loadexec->text_addr + patch->LoadRebootCall);
-
-	//patch Rebootex position to 0x88FC0000
-	_sw(0x3C0188FC, loadexec->text_addr + patch->RebootJump); // lui $at, 0x88FC
-
-	//save LoadReboot function
-	LoadReboot = (void*)(loadexec->text_addr + patch->LoadReboot);
-
-	//allow user $k1 configs to call sceKernelLoadExecWithApiType
-	_sw(0x1000000C, loadexec->text_addr + patch->sceKernelLoadExecWithApiTypeCheck1);
-	//allow all user levels to call sceKernelLoadExecWithApiType
-	_sw(NOP, loadexec->text_addr + patch->sceKernelLoadExecWithApiTypeCheck2);
-
-	//allow all user levels to call sceKernelExitVSHVSH
-	_sw(0x10000008, loadexec->text_addr + patch->sceKernelExitVSHVSHCheck1);
-	_sw(NOP, loadexec->text_addr + patch->sceKernelExitVSHVSHCheck2);
 }

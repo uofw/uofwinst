@@ -51,7 +51,7 @@ int module_start(SceSize args __attribute__((unused)), void* argp __attribute__(
 	printk("Compiled in %s %s\n", __DATE__, __TIME__);
 
 	oe_mallocinit();
-	syspatch_init(rebootex_conf.patch_memlmd);
+	syspatch_init();
 
 	return 0;
 }

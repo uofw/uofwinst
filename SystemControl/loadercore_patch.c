@@ -388,19 +388,19 @@ void patch_sceLoaderCore(void)
 	_sw(MAKE_CALL(memlmd_7CF1CD3E), loadcore->text_addr + g_offs->loadercore_patch.LoaderCoreUndo2Call1);
 	_sw(MAKE_CALL(memlmd_7CF1CD3E), loadcore->text_addr + g_offs->loadercore_patch.LoaderCoreUndo2Call2);
 
-    /* undo my own patches */
-    _sw(0x1040002C, loadcore->text_addr + 0x58E0);
-    _sw(0x0040F809, loadcore->text_addr + 0x58E8);
+	/* undo my own patches */
+	_sw(0x1040002C, loadcore->text_addr + 0x58E0);
+	_sw(0x0040F809, loadcore->text_addr + 0x58E8);
 
-    void * sub_3E80 = (void*)loadcore->text_addr + 0x3E80;
+	void * sub_3E80 = (void*)loadcore->text_addr + 0x3E80;
 
-    _sw(MAKE_CALL(sub_3E80), loadcore->text_addr + 0x3E00);
-    _sw(MAKE_CALL(sub_3E80), loadcore->text_addr + 0x3F58);
-    _sw(MAKE_CALL(sub_3E80), loadcore->text_addr + 0x58F8);
-    _sw(MAKE_CALL(sub_3E80), loadcore->text_addr + 0x5908);
+	_sw(MAKE_CALL(sub_3E80), loadcore->text_addr + 0x3E00);
+	_sw(MAKE_CALL(sub_3E80), loadcore->text_addr + 0x3F58);
+	_sw(MAKE_CALL(sub_3E80), loadcore->text_addr + 0x58F8);
+	_sw(MAKE_CALL(sub_3E80), loadcore->text_addr + 0x5908);
 
-    _sw(0x10400009, loadcore->text_addr + 0x5944);
-    _sw(0x0040F809, loadcore->text_addr + 0x5950);
+	_sw(0x10400009, loadcore->text_addr + 0x5944);
+	_sw(0x0040F809, loadcore->text_addr + 0x5950);
 
 	setup_nid_resolver();
 
