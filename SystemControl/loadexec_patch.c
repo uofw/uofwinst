@@ -97,5 +97,7 @@ void patch_sceLoadExec(int isInstalled)
 		_sw(0x10000008, loadexec->text_addr + patch->sceKernelExitVSHVSHCheck1);
 		_sw(NOP, loadexec->text_addr + patch->sceKernelExitVSHVSHCheck2);
 	} else {
+		_sw((u32)load_reboot, loadexec->text_addr + 0);
+		LoadReboot = *(void**)(loadexec->text_addr + 4);
 	}
 }

@@ -37,13 +37,36 @@ static STMOD_HANDLER previous;
 static void patch_sceWlan_Driver(u32 text_addr);
 static void patch_scePower_Service(u32 text_addr);
 static void patch_sceUmdMan_driver(SceModule* mod);
+int replaced_loadExec;
 
 int hasBeenReplaced(const char *prx)
 {
 	int i;
+	char name[256];
+	strcpy(name, prx);
+	strcat(name, ".prx");
 	for (i = 0; rebootex_arg.replace[i][0] != '\0'; i++)
-		if (strcmp(rebootex_arg.replace[i], prx) == 0)
+		if (strcmp(rebootex_arg.replace[i], name) == 0)
 			return 1;
+	return 0;
+}
+
+int hasBeenReplaced_allVer(const char *prx)
+{
+	u8 list[] = { 1, 2, 3, 4, 5, 7, 9, 11 };
+	char name[256];
+	int len = strlen(prx);
+	u32 i;
+
+	strcpy(name, prx);
+	strcat(name, "_00g");
+	for (i = 0; i < sizeof list; i++)
+	{
+		name[len + 1] = '0' + (list[i] / 10);
+		name[len + 2] = '0' + (list[i] % 10);
+		if (hasBeenReplaced(name))
+			return 1;
+	}
 	return 0;
 }
 
@@ -181,7 +204,7 @@ static int syspatch_module_chain(SceModule2 *mod)
 	// load after lflash
 	if(0 == strcmp(mod->modname, "sceDisplay_Service")) {
 		load_config();
-		patch_sceLoadExec(0);//hasBeenReplaced("loadexec_01g")); // TODO: check all versions
+		patch_sceLoadExec(replaced_loadExec);
 		sync_cache();
 		goto exit;
 	}
@@ -277,9 +300,12 @@ static void patch_sceUmdMan_driver(SceModule* mod)
 void syspatch_init(void)
 {
 	setup_module_handler();
+
+	replaced_loadExec = hasBeenReplaced_allVer("loadexec");
+
 	previous = sctrlHENSetStartModuleHandler(&syspatch_module_chain);
 	patch_sceLoaderCore();
-	if (!hasBeenReplaced("memlmd"))
+	if (!hasBeenReplaced_allVer("memlmd"))
 	    patch_sceMemlmd();
 	patch_sceInterruptManager();
 	patch_sceSystemMemoryManager();

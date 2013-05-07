@@ -48,6 +48,7 @@ void* sceKernelGetBlockHeadAddr(SceUID blockid);
 SceUID sceKernelAllocPartitionMemory(SceUID partitionid, const char * name, int type, SceSize size, void * addr);
 
 extern int (*g_on_module_start)(SceModule2*);
+extern int replaced_loadExec;
 
 // for sctrlHENSetMemory
 u32 g_p2_size = 24;
@@ -386,10 +387,16 @@ int sctrlKernelLoadExecVSHWithApitype(int apitype, const char *file, struct SceK
 	mod = (SceModule2*) sctrlKernelFindModuleByName("sceLoadExec");
 	text_addr = mod->text_addr;
 
-	if (psp_model == PSP_GO) {
-		_sctrlKernelLoadExecVSHWithApitype = (void*)(text_addr + g_offs->loadexec_patch_05g.sctrlKernelLoadExecVSHWithApitype);
-	} else {
-		_sctrlKernelLoadExecVSHWithApitype = (void*)(text_addr + g_offs->loadexec_patch_other.sctrlKernelLoadExecVSHWithApitype);
+	if (!replaced_loadExec)
+	{
+		if (psp_model == PSP_GO) {
+			_sctrlKernelLoadExecVSHWithApitype = (void*)(text_addr + g_offs->loadexec_patch_05g.sctrlKernelLoadExecVSHWithApitype);
+		} else {
+			_sctrlKernelLoadExecVSHWithApitype = (void*)(text_addr + g_offs->loadexec_patch_other.sctrlKernelLoadExecVSHWithApitype);
+		}
+	}
+	else {
+		_sctrlKernelLoadExecVSHWithApitype = *(void**)(text_addr + 8);
 	}
 
 	ret = _sctrlKernelLoadExecVSHWithApitype(apitype, file, param, 0x10000);
