@@ -305,11 +305,13 @@ void syspatch_init(void)
 	replaced_mods.init = hasBeenReplaced("init");
 
 	previous = sctrlHENSetStartModuleHandler(&syspatch_module_chain);
-	patch_sceLoaderCore();
+	if (!hasBeenReplaced("loadcore"))
+		patch_sceLoaderCore();
 	if (!hasBeenReplaced_allVer("memlmd"))
-	    patch_sceMemlmd();
+		patch_sceMemlmd();
 	patch_sceInterruptManager();
-	patch_sceSystemMemoryManager();
+	if (!hasBeenReplaced("sysmem"))
+		patch_sceSystemMemoryManager();
 
 	sync_cache();
 }

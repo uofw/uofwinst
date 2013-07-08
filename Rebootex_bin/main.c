@@ -166,6 +166,10 @@ void main(int arg1, int arg2, int arg3, int arg4)
 	//UnpackBootConfig buffer address
 	_sw(0x27A40004, REBOOT_START + patch->UnpackBootConfigBufferAddress); // addiu $a0, $sp, 4
 
+	// Return 0 even when the MAGIC isn't ~PSP
+	_sw(0x3C090000, REBOOT_START + 0x6080); // lui        $t1, 0x0
+	_sw(0x35250000, REBOOT_START + 0x608C); // ori        $a1, $t1, 0x0
+
 	//initializing global variables
 	rebootmodule_open = 0;
 

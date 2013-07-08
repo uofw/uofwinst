@@ -466,7 +466,14 @@ int install_module(char *fname)
     }
     int count = sceIoRead(in, compress_buf, 2000000);
     sceIoClose(in);
-    return compress_module(outname, compress_buf, count);
+    /* Since sysmem.prx (and loadcore.prx) are directly started by reboot.bin, the easiest way to run them is to not encrypt them. */
+    if (strcmp(fname, "sysmem.prx") == 0) {
+        SceUID out = sceIoOpen(outname, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
+        sceIoWrite(out, compress_buf, count);
+        sceIoClose(out);
+        return 0;
+    } else
+        return compress_module(outname, compress_buf, count);
 }
 
 void replace_module(char *fname)
