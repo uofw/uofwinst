@@ -34,7 +34,7 @@ static void wait_memory_stick_ready_timeout(int wait);
 static void patch_devicename(SceUID modid)
 {
 	SceModule2 *mod;
-	u32 i;
+	int i;
 
 	mod = (SceModule2*)sctrlKernelFindModuleByUID(modid);
 

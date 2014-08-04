@@ -30,7 +30,7 @@
 
 void patch_sceSystemMemoryManager(void)
 {
-	u32 i;
+	int i;
 
 	// allow invalid complied sdk version
 	for(i=0; i<NELEMS(g_offs->sysmem_patch.sysmemforuser_patch); ++i) {

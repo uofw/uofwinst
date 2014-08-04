@@ -144,11 +144,11 @@ static int is_system_booted(void)
 
 static int syspatch_module_chain(SceModule2 *mod)
 {
-#ifdef DEBUG
 	int apitype;
 
 	apitype = sceKernelInitApitype();
 	
+#ifdef DEBUG
 	printk("Starting %s Apitype: 0x%X\n", mod->modname, apitype);
 	hook_import_bynid((SceModule*)mod, "KDebugForKernel", 0x84F370BC, printk, 0);
 #endif

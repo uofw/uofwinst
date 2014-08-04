@@ -105,7 +105,25 @@ int EatKey(SceCtrlData *pad_data, int count)
 
 	// copy true value
 
-	scePaf_memcpy_660(&ctrl_pad, pad_data, sizeof(SceCtrlData));
+#ifdef CONFIG_639
+	if(psp_fw_version == FW_639)
+		scePaf_memcpy(&ctrl_pad, pad_data, sizeof(SceCtrlData));
+#endif
+
+#ifdef CONFIG_635
+	if(psp_fw_version == FW_635)
+		scePaf_memcpy(&ctrl_pad, pad_data, sizeof(SceCtrlData));
+#endif
+
+#ifdef CONFIG_620
+	if (psp_fw_version == FW_620)
+		scePaf_memcpy_620(&ctrl_pad, pad_data, sizeof(SceCtrlData));
+#endif
+
+#ifdef CONFIG_660
+	if (psp_fw_version == FW_660)
+		scePaf_memcpy_660(&ctrl_pad, pad_data, sizeof(SceCtrlData));
+#endif
 
 	// buttons check
 	buttons     = ctrl_pad.Buttons;
@@ -192,7 +210,26 @@ static int get_umdvideo(UmdVideoList *list, char *path)
 			p = dir.d_name;
 
 		if(0 == stricmp(p, ".iso") || 0 == stricmp(p, ".cso")) {
-			scePaf_sprintf_660(fullpath, "%s/%s", path, dir.d_name);
+#ifdef CONFIG_639
+			if(psp_fw_version == FW_639)
+				scePaf_sprintf(fullpath, "%s/%s", path, dir.d_name);
+#endif
+
+#ifdef CONFIG_635
+			if(psp_fw_version == FW_635)
+				scePaf_sprintf(fullpath, "%s/%s", path, dir.d_name);
+#endif
+
+#ifdef CONFIG_620
+			if (psp_fw_version == FW_620)
+				scePaf_sprintf_620(fullpath, "%s/%s", path, dir.d_name);
+#endif
+
+#ifdef CONFIG_660
+			if (psp_fw_version == FW_660)
+				scePaf_sprintf_660(fullpath, "%s/%s", path, dir.d_name);
+#endif
+
 			umdvideolist_add(list, fullpath);
 		}
 	}
@@ -396,7 +433,25 @@ int TSRThread(SceSize args, void *argp)
 		}
 	}
 
-	scePaf_memcpy_660(&cnf_old, &cnf, sizeof(SEConfig));
+#ifdef CONFIG_639
+	if(psp_fw_version == FW_639)
+		scePaf_memcpy(&cnf_old, &cnf, sizeof(SEConfig));
+#endif
+
+#ifdef CONFIG_635
+	if(psp_fw_version == FW_635)
+		scePaf_memcpy(&cnf_old, &cnf, sizeof(SEConfig));
+#endif
+
+#ifdef CONFIG_620
+	if (psp_fw_version == FW_620)
+		scePaf_memcpy_620(&cnf_old, &cnf, sizeof(SEConfig));
+#endif
+
+#ifdef CONFIG_660
+	if (psp_fw_version == FW_660)
+		scePaf_memcpy_660(&cnf_old, &cnf, sizeof(SEConfig));
+#endif
 
 	while(stop_flag == 0) {
 		if( sceDisplayWaitVblankStart() < 0)

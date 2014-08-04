@@ -36,8 +36,8 @@ def cleanup():
 def main():
 	create_gzip("../../Installer/installer.prx", "installer.prx.gz")
 	create_gzip("../../Rebootex/Rebootex.prx", "Rebootex.prx.gz")
-	os.system("`psp-config --pspdev-path`/bin/bin2c installer.prx.gz installer.h installer")
-	os.system("`psp-config --pspdev-path`/bin/bin2c Rebootex.prx.gz Rebootex_prx.h Rebootex_prx")
+	os.system("bin2c installer.prx.gz installer.h installer")
+	os.system("bin2c Rebootex.prx.gz Rebootex_prx.h Rebootex_prx")
 	cleanup()
 
 if __name__ == "__main__":

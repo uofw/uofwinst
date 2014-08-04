@@ -18,7 +18,7 @@ USE_KERNEL_LIBS = 1
 
 
 LIBDIR = ../libs
-LIBS = -lpspsystemctrl_kernel -lpspumd_driver
+LIBS = -lpspsystemctrl_kernel -lpspumd_kernel
 
 PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build_prx.mak

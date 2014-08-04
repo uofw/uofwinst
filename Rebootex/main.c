@@ -46,7 +46,7 @@ static int (*LoadReboot)(void * arg1, unsigned int arg2, void * arg3, unsigned i
 rebootex_args *g_argp;
 SceSize g_args;
 
-void build_rebootex_configure()
+void build_rebootex_configure(void)
 {
 	rebootex_config *conf = (rebootex_config *)(REBOOTEX_CONFIG);
 	
@@ -92,11 +92,14 @@ int load_reboot(void * arg1, unsigned int arg2, void * arg3, unsigned int arg4)
 void patch_sceLoadExec(int mode)
 {
 	SceModule2 * loadexec = (SceModule2*)sctrlKernelFindModuleByName("sceLoadExec");
+	u32 text_addr;
 	struct sceLoadExecPatch *patch;
 
 	if (loadexec == NULL) {
 		return;
 	}
+
+	text_addr = loadexec->text_addr;
 
 	if(psp_model == PSP_GO) { // PSP-N1000
 		patch = &g_offs->loadexec_patch_05g;
@@ -124,7 +127,7 @@ void patch_sceLoadExec(int mode)
 	sync_cache();
 }
 
-int main_thread(SceSize args __attribute__((unused)), void *argp __attribute__((unused)))
+int main_thread(SceSize args, void *argp)
 {
 	int mode = 1;
 	if(g_args >= 4)
@@ -155,7 +158,7 @@ int module_start(SceSize args, void* argp)
 	return 0;
 }
 
-int module_stop(SceSize args __attribute__((unused)), void *argp __attribute__((unused)))
+int module_stop(SceSize args, void *argp)
 {
 	return 0;
 }

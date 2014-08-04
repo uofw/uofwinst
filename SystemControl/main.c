@@ -35,7 +35,7 @@ PSP_MODULE_INFO("SystemControl", 0x3007, 1, 0);
 u32 psp_model = 0;
 u32 psp_fw_version = 0;
 
-int module_start(SceSize args __attribute__((unused)), void* argp __attribute__((unused)))
+int module_start(SceSize args, void* argp)
 {
 #ifdef DEBUG
 	fill_vram(0x000000ff);

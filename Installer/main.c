@@ -31,7 +31,21 @@
 #include "galaxy.h"
 #include "inferno.h"
 
+#ifdef CONFIG_660
 #include "march33_660.h"
+#endif
+
+#ifdef CONFIG_639
+#include "march33.h"
+#endif
+
+#ifdef CONFIG_635
+#include "march33.h"
+#endif
+
+#ifdef CONFIG_620
+#include "march33_620.h"
+#endif
 
 #include "popcorn.h"
 #include "satelite.h"
@@ -202,7 +216,7 @@ struct InstallList g_file_lists[] = {
 	{ vshctrl, &size_vshctrl, PATH_VSHCTRL, },
 	{ galaxy, &size_galaxy, PATH_GALAXY, },
 	{ stargate, &size_stargate, PATH_STARGATE, },
-	{ march33_660, &size_march33_660, PATH_MARCH33, },
+	{ NULL, NULL, PATH_MARCH33, },
 	{ inferno, &size_inferno, PATH_INFERNO, },
 	{ usbdevice, &size_usbdevice, PATH_USBDEVICE, },
 	{ popcorn, &size_popcorn, PATH_POPCORN, },
@@ -523,8 +537,7 @@ int query(void)
 
 int install_cfw(void)
 {
-	int ret;
-	u32 i;
+	int ret, i;
 
 	if(disable_smart) {
 		sceIoRemove("flash1:/config.se");
@@ -533,6 +546,34 @@ int install_cfw(void)
 	for(i=0; i<NELEMS(g_old_cfw_files); ++i) {
 		sceIoRemove(g_old_cfw_files[i]);
 	}
+
+#ifdef CONFIG_660
+	if(psp_fw_version == FW_660) {
+		g_file_lists[4].buf = march33_660;
+		g_file_lists[4].size = &size_march33_660;
+	}
+#endif
+
+#ifdef CONFIG_639
+	if(psp_fw_version == FW_639) {
+		g_file_lists[4].buf = march33;
+		g_file_lists[4].size = &size_march33;
+	}
+#endif
+
+#ifdef CONFIG_635
+	if(psp_fw_version == FW_635) {
+		g_file_lists[4].buf = march33;
+		g_file_lists[4].size = &size_march33;
+	}
+#endif
+
+#ifdef CONFIG_620
+	if (psp_fw_version == FW_620) {
+		g_file_lists[4].buf = march33_620;
+		g_file_lists[4].size = &size_march33_620;
+	}
+#endif
 
 	for(i=0; i<NELEMS(g_file_lists); ++i) {
 		ret = smart_write_file(g_file_lists[i].dst, g_file_lists[i].buf, *g_file_lists[i].size);
@@ -785,14 +826,69 @@ int is_file_exist(const char *path)
 	return ret == 0 ? 1 : 0;
 }
 
+int is_permanent_patch_installed(void)
+{
+	/*
+	if(psp_fw_version != FW_620) {
+		return 0;
+	}
+
+	if(!is_file_exist(VSHORIG)) {
+		return 0;
+	}
+
+	if(0 == compare_file(VSHMAIN, VSHORIG)) {
+		return 0;
+	}
+
+	return 1;
+	*/
+	return 0;
+}
+
+void uninstall_permanent_patch(void)
+{
+	/*
+	int ret;
+
+	do {
+		ret = sceIoRemove(VSHMAIN);
+
+		if(ret != 0) {
+			printf("Delete %s failed\n", VSHMAIN);
+			sceKernelDelayThread(1000000L);
+		}
+	} while(ret != 0);
+
+	do {
+		ret = copy_file(VSHORIG, VSHMAIN);
+
+		if(ret != 0) {
+			printf("Copy %s to %s failed 0x%08X\n", VSHORIG, VSHMAIN, ret);
+			sceKernelDelayThread(1000000L);
+		}
+	} while(ret != 0);
+
+	do {
+		ret = sceIoRemove(VSHORIG);
+
+		if(ret != 0) {
+			printf("Delete %s failed\n", VSHTEMP);
+			sceKernelDelayThread(1000000L);
+		}
+	} while(ret != 0);
+
+	sceIoRemove(VSHTEMP);
+	*/
+}
+
 int uninstall_cfw(void)
 {
-	u32 ret;
+	int ret;
 
 	sceIoRemove("flash1:/config.se");
 
-	u32 i;
-	for(i=0; i<NELEMS(g_file_lists); ++i) {
+	int i; for(i=0; i<NELEMS(g_file_lists); ++i) {
 		printf("Removing %s...", g_file_lists[i].dst);
 		ret = sceIoRemove(g_file_lists[i].dst);
 
@@ -815,6 +911,12 @@ int uninstall_cfw(void)
 			break;
 		case PSP_1000:
 			break;
+	}
+
+	if(is_permanent_patch_installed()) {
+		printf("Uninstalling permanent patch...");
+		uninstall_permanent_patch();
+		printf("OK\n");
 	}
 
 	return 0;
@@ -856,7 +958,7 @@ void start_reboot(int mode)
 	sceKernelExitGame();
 }
 
-int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
+int main(int argc, char *argv[])
 {
 	int ret = 0;
 	struct SceIoStat stat;
@@ -866,6 +968,35 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 	memset(&stat, 0, sizeof(stat));
 	pspDebugScreenInit();
 	psp_fw_version = sceKernelDevkitVersion();
+
+#ifdef CONFIG_620
+	if(psp_fw_version == FW_620) {
+		goto version_OK;
+	}
+#endif
+
+#ifdef CONFIG_635
+	if(psp_fw_version == FW_635) {
+		goto version_OK;
+	}
+#endif
+
+#ifdef CONFIG_639
+	if(psp_fw_version == FW_639) {
+		goto version_OK;
+	}
+#endif
+	
+#ifdef CONFIG_660
+	if(psp_fw_version == FW_660) {
+		goto version_OK;
+	}
+#endif
+	
+	printf("Sorry. This program doesn't support your FW(0x%08X).\n", (uint)psp_fw_version);
+	goto exit;
+	
+version_OK:
 	psp_model = kuKernelGetModel();
 	scePowerSetClockFrequency(333, 333, 166);
 	init_flash();
@@ -895,6 +1026,36 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 		sceKernelExitGame();
 	}
 
+	switch(psp_model) {
+		case PSP_GO:
+			printf("PSP GO BRITE Detected ....\n");
+			break;
+		case PSP_9000:
+			printf("PSP BRITE 3000(09g) Detected ....\n");
+			break;
+		case PSP_7000:
+			printf("PSP BRITE 3000(07g) Detected ....\n");
+			break;
+		case PSP_4000:
+			printf("PSP BRITE 3000(04g) Detected ....\n");
+			break;
+		case PSP_3000:
+			printf("PSP BRITE 3000 Detected ....\n");
+			break;
+		case PSP_2000:
+			printf("PSP SLIM 2000 Detected ....\n");
+			break;
+		case PSP_1000:
+			printf("PSP FAT 1000 Detected ....\n");
+			break;
+		case PSP_11000:
+			printf("PSP STREET E1000 Detected ....\n");
+			break;
+		default:
+			printf("Unknown PSP model 0%dg\n", psp_model+1);
+			break;
+	}
+
 	sceCtrlReadBufferPositive(&ctl, 1);
 
 	if (ctl.Buttons & PSP_CTRL_LTRIGGER) {
@@ -903,6 +1064,7 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 
 	if (key & PSP_CTRL_CROSS) {
 		ret = install_cfw();
+
 		if (ret == 0) {
 			printf(" Completed.\nPress X to start CFW.\n");
 
@@ -925,6 +1087,7 @@ int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 		start_reboot(0);
 	}
 
+exit:
 	printf("Press X to exit.\n");
 
 	sceCtrlReadBufferPositive(&ctl, 1);

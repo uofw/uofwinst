@@ -105,10 +105,10 @@ int is_cpu_intr_enable(void);
 void hexdump(void *addr, int size);
 void fill_vram(u32 color);
 #else
-static inline void hexdump(void *addr __attribute__((unused)), int size __attribute__((unused)))
+static inline void hexdump(void *addr, int size)
 {
 }
-static inline void fill_vram(u32 color __attribute__((unused)))
+static inline void fill_vram(u32 color)
 {
 }
 #endif

@@ -62,7 +62,7 @@ static int load_version_txt(void *buf, int size)
 static int check_valid_version_txt(const void *buf, int size)
 {
 	const char *p;
-	u32 i;
+	int i;
 
 	p = buf;
 

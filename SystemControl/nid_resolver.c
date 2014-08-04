@@ -54,7 +54,7 @@ u32 nid_fix_size;
 
 resolver_config* get_nid_resolver(const char *libname)
 {
-	u32 i;
+	int i;
 
 	for(i=0; i<nid_fix_size; ++i) {
 		if (nid_fix[i].enabled && !strcmp(libname, nid_fix[i].name)) {
@@ -109,8 +109,7 @@ u32 resolve_nid(resolver_config *resolver, u32 nid)
 
 static int resolve_missing_nid(SceLibraryStubTable *stub, MissingNIDResolver *resolver)
 {
-	int cnt, i;
-	u32 j;
+	int cnt, i, j;
 	const char *libname;
 
 	libname = resolver->libname;
@@ -241,8 +240,8 @@ static int module_can_skip_nid_resolve(void *buf)
 
 int _sceKernelLinkLibraryEntries(void *buf, int size)
 {
-	int ret, offset;
-	u32 i, stubcount;
+	int ret, offset, i;
+	u32 stubcount;
 	struct SceLibraryStubTable *stub;
 	resolver_config *resolver;
 
@@ -292,8 +291,8 @@ int _sceKernelLinkLibraryEntries(void *buf, int size)
 
 int _sceKernelLinkLibraryEntriesForUser(u32 unk0, void *buf, int size)
 {
-	int ret, offset;
-	u32 i, stubcount;
+	int ret, offset, i;
+	u32 stubcount;
 	struct SceLibraryStubTable *stub;
 	resolver_config *resolver;
 
@@ -331,11 +330,9 @@ int _sceKernelLinkLibraryEntriesForUser(u32 unk0, void *buf, int size)
 		stub = buf + offset;
 		stubcount = stub->stubcount;
 
-		/*
 		for(i=0; i<NELEMS(g_missing_resolver_user); ++i) {
 			resolve_missing_nid(stub, g_missing_resolver_user[i]);
 		}
-		*/
 		
 		offset += stub->len << 2;
 	}
@@ -395,8 +392,32 @@ void setup_nid_resolver(void)
 	_sw(MAKE_CALL(_sceKernelLinkLibraryEntries), modmgr->text_addr + g_offs->modulemgr_patch.sceKernelLinkLibraryEntriesCall);
 	_sw(MAKE_CALL(_sceKernelLinkLibraryEntriesForUser), modmgr->text_addr + g_offs->modulemgr_patch.sceKernelLinkLibraryEntriesForUserCall);
 
-	nid_fix = nid_660_fix;
-	nid_fix_size = nid_660_fix_size;
+	switch(psp_fw_version) {
+#ifdef CONFIG_660
+		case FW_660:
+			nid_fix = nid_660_fix;
+			nid_fix_size = nid_660_fix_size;
+			break;
+#endif
+#ifdef CONFIG_639
+		case FW_639:
+			nid_fix = nid_639_fix;
+			nid_fix_size = nid_639_fix_size;
+			break;
+#endif
+#ifdef CONFIG_635
+		case FW_635:
+			nid_fix = nid_635_fix;
+			nid_fix_size = nid_635_fix_size;
+			break;
+#endif
+#ifdef CONFIG_620
+		case FW_620:
+			nid_fix = nid_620_fix;
+			nid_fix_size = nid_620_fix_size;
+			break;
+#endif
+	}
 
 	sort_nid_table(nid_fix, nid_fix_size);
 }

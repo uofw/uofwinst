@@ -713,6 +713,12 @@ int is_file_existed(const char *path)
 	return 0;
 }
 
+int is_permanent_mode(void)
+{
+	//return is_file_existed(VSHORIG + sizeof("flash0:") - 1);
+	return 0;
+}
+
 int is_fatms371(void)
 {
 	return is_file_existed(PATH_FATMS_HELPER + sizeof("flash0:") - 1) && is_file_existed(PATH_FATMS_371 + sizeof("flash0:") - 1);
@@ -730,7 +736,7 @@ int _UnpackBootConfig(char **p_buffer, int length)
 	*p_buffer = buffer;
 
 	if(ofw_mode) {
-	    return result;
+		goto exit;
 	}
 
 	newsize = AddPRX(buffer, "/kd/init.prx", PATH_SYSTEMCTRL+sizeof(PATH_FLASH0)-2, 0x000000EF);
@@ -821,6 +827,11 @@ int _UnpackBootConfig(char **p_buffer, int length)
 
 		if (newsize > 0) result = newsize;
 	}
+
+exit:
+	//if((!recovery_mode || ofw_mode) && is_permanent_mode()) {
+	//	RenameModule(buffer, VSHMAIN + sizeof(PATH_FLASH0) - 2, VSHORIG + sizeof(PATH_FLASH0) - 2);
+	//}
 
 	return result;
 }

@@ -86,7 +86,7 @@ static u32 g_comp_tag[] = {
 
 static inline int is_comp_tag(u32 tag)
 {
-	u32 i;
+	int i;
 
 	for(i=0; i<NELEMS(g_comp_tag); ++i) {
 		if(g_comp_tag[i] == tag)

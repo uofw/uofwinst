@@ -41,7 +41,7 @@ static inline void *get_power_driver_function(u32 nid)
 	return (void*)sctrlHENFindFunction("scePower_Service", "scePower_driver", nid);
 }
 
-static SceUInt usb_charge_timer_handler(SceUID uid __attribute__((unused)), SceInt64 unk0 __attribute__((unused)), SceInt64 unk1 __attribute__((unused)), void *common __attribute__((unused)))
+static SceUInt usb_charge_timer_handler(SceUID uid, SceInt64 unk0, SceInt64 unk1, void *common)
 {
 	int (*_scePowerBatteryEnableUsbCharging)(int) = NULL;
 	int (*_scePowerBatteryDisableUsbCharging)(int) = NULL;

@@ -29,9 +29,9 @@ SEConfig conf;
 
 #define CONFIG_MAGIC 0x47434554
 
-static inline int get_conf_magic(void)
+static inline u32 get_conf_magic(void)
 {
-	int version;
+	u32 version;
 
 	version = (sctrlHENGetVersion() & 0xF);
 	version = (version << 16) | sctrlHENGetMinorVersion();

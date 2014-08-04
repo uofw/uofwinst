@@ -10,13 +10,46 @@ GALAXYDRIVER = ISODrivers/Galaxy
 M33DRIVER = ISODrivers/March33
 INFERNO = ISODrivers/Inferno
 STARGATE = Stargate
+ISOLAUNCHER = testsuite/ISOLauncher
+FASTRECOVERY = FastRecovery
 SATELITE = Satelite
 POPCORN = Popcorn
 RECOVERY = Recovery
+PERMANENT = Permanent
+CIPL = CIPL
+CIPL_INSTALLER = CIPL_installer
 USBDEVICE=usbdevice
 CROSSFW = CrossFW
 DISTRIBUTE = dist
-OPT_FLAGS=
+CONFIG_660 = 1
+
+ifeq ($(CONFIG_635), 1)
+OPT_FLAGS+=CONFIG_635=1
+endif
+
+ifeq ($(CONFIG_620), 1)
+OPT_FLAGS+=CONFIG_620=1
+endif
+
+ifeq ($(CONFIG_639), 1)
+OPT_FLAGS+=CONFIG_639=1
+endif
+
+ifeq ($(CONFIG_660), 1)
+OPT_FLAGS+=CONFIG_660=1
+endif
+
+ifeq ($(PSID_CHECK), 1)
+RELEASE_OPTION=PSID_CHECK=1
+endif
+
+ifeq ($(DEBUG), 1)
+DEBUG_OPTION=DEBUG=1
+endif
+
+ifeq ($(NIGHTLY), 1)
+NIGHTLY_OPTION=NIGHTLY=1
+endif
 
 all:
 # Preparing Distribution Folders

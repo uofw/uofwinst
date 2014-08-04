@@ -136,7 +136,7 @@ void SetSpeed(int cpuspd, int busspd)
 {
 	int (*_scePowerSetClockFrequency)(int, int, int);
 	u32 fp;
-	u32 i;
+	int i;
 
 	for(i=0; i<NELEMS(g_cpu_list); ++i) {
 		if(cpuspd == g_cpu_list[i])
