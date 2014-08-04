@@ -1,7 +1,7 @@
 # uOFW installer
 
 
-From ProCFW, from http://code.google.com/p/procfw/ revision e71a26ea3f512435d7610e6443c4121388b705e3
+From ProCFW, from http://code.google.com/p/procfw/ revision 688e1f15bd8caa789ddfcb9e26f75ee295df2911
 Code is placed under GPLv3, as ProCFW.  
 It was patched so it only supports 6.60 and can run uOFW modules.  
 

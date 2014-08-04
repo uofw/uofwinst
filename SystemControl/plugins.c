@@ -25,6 +25,7 @@
 #include "printk.h"
 #include "strsafe.h"
 #include "rebootex_conf.h"
+#include "libertas.h"
 
 #define WAIT_MEMORY_STICK_TIMEOUT ( 2 * 1000000 )
 
@@ -290,6 +291,9 @@ static int is_vsh_plugins_enabled(void)
 int load_plugins(void)
 {
 	unsigned int key = sceKernelApplicationType();
+	int apitype;
+
+	apitype = sceKernelInitApitype();
 
 	if(rebootex_conf.recovery_mode) {
 		return 0;
@@ -303,7 +307,7 @@ int load_plugins(void)
 		// pspgo has smaller wait time
 		load_plugin("ms0:/seplugins/vsh.txt", psp_model == PSP_GO ? WAIT_MEMORY_STICK_TIMEOUT / 10 : WAIT_MEMORY_STICK_TIMEOUT);
 	} //game mode
-	else if(conf.pluggame && key == PSP_INIT_KEYCONFIG_GAME) {
+	else if(conf.pluggame && ( key == PSP_INIT_KEYCONFIG_GAME || apitype == 0x123) ) {
 		if(psp_model == PSP_GO && sctrlKernelBootFrom() == 0x50) {
 			load_plugin("ef0:/seplugins/game.txt", WAIT_MEMORY_STICK_TIMEOUT);
 		} else {
@@ -317,7 +321,7 @@ int load_plugins(void)
 			load_plugin("ms0:/seplugins/pops.txt", WAIT_MEMORY_STICK_TIMEOUT);
 		}
 	}
-
+	
 	//return success
 	return 0;
 }

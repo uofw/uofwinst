@@ -688,6 +688,36 @@ int patch_bootconf_updaterumd(char *buffer, int length)
 	return result;
 }
 
+int patch_bootconf_fatms371(char *buffer, int length)
+{
+	int newsize;
+
+	newsize = AddPRX(buffer, "/kd/fatms.prx", PATH_FATMS_HELPER+sizeof(PATH_FLASH0)-2, 0xEF & ~VSH_RUNLEVEL);
+	RemovePrx(buffer, "/kd/fatms.prx", 0xEF & ~VSH_RUNLEVEL);
+	newsize = AddPRX(buffer, "/kd/wlan.prx", PATH_FATMS_371+sizeof(PATH_FLASH0)-2, 0xEF & ~VSH_RUNLEVEL);
+
+	return newsize;
+}
+
+int is_file_existed(const char *path)
+{
+	int ret;
+
+	ret = (*sceBootLfatOpen)(path);
+
+	if(ret >= 0) {
+		(*sceBootLfatClose)();
+		return 1;
+	}
+
+	return 0;
+}
+
+int is_fatms371(void)
+{
+	return is_file_existed(PATH_FATMS_HELPER + sizeof("flash0:") - 1) && is_file_existed(PATH_FATMS_371 + sizeof("flash0:") - 1);
+}
+
 int _UnpackBootConfig(char **p_buffer, int length)
 {
 	int result;
@@ -783,6 +813,13 @@ int _UnpackBootConfig(char **p_buffer, int length)
 		newsize = AddPRX(buffer, loadrebootmodulebefore, "/rtm.prx", rebootmoduleflags);
 
 		if(newsize > 0) result = newsize;
+	}
+
+	if(!recovery_mode && is_fatms371())
+	{
+		newsize = patch_bootconf_fatms371(buffer, length);
+
+		if (newsize > 0) result = newsize;
 	}
 
 	return result;
