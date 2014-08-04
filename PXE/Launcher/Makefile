@@ -1,6 +1,6 @@
 TARGET = pxe_launcher
 OBJS = main.o imports.o launcher_patch_offset.o syscall.o ../../Common/utils.o
-EXTRA_CLEAN = Rebootex_prx.h Installer.h
+EXTRA_CLEAN = Rebootex_prx.h installer.h rebootex.h
 
 all: $(OBJS)
 
